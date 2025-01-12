@@ -8,7 +8,9 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\""
   },
   "exports":{
-    "backend-common":"./packages/backend-common"
+    "backend-common":"./packages/backend-common",
+    "common":"./packages/common",
+    "db":"./packages/db"
   },
   "devDependencies": {
     "prettier": "^3.2.5",

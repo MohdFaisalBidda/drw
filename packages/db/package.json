@@ -4,11 +4,13 @@
   "description": "",
   "main": "index.js",
   "exports": {
-    "./prisma": "./src/index.ts",
-    "./schema": "./prisma/schema.prisma"
+    "./prisma": "./dist/index.js",
+    "./schema": "./src/schema.ts"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc -b",
+    "start": "tsx ./src/index.ts",
+    "dev": "npm run build && tsx ./src/index.ts"
   },
   "devDependencies": {
     "@repo/typescript-config": "*",

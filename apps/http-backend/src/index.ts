@@ -1,9 +1,9 @@
 import express from 'express'
 import jwt from 'jsonwebtoken'
-import middleware from './middleware'
 import { JWT_SECRET } from '@repo/backend-common/config'
 import { CreateRoomSchema, CreateUserSchema, SigninSchema } from '@repo/common/types'
 import { prisma } from '@repo/db/prisma'
+import middleware from './middleware'
 
 const app = express()
 const PORT = process.env.PORT || 8000
@@ -18,10 +18,10 @@ app.post('/api/auth/signup', async (req, res) => {
 
     const user = await prisma.user.create({
         data: {
-            username: data.data.username,
-            password: data.data.password,
-            name: data.data.name,
             email: data.data.email,
+            password: data.data.password,
+            username: data.data.username,
+            name: data.data.name,
         }
     })
 
@@ -60,8 +60,8 @@ app.post('/api/room', middleware, async (req, res) => {
 
     const room = await prisma.room.create({
         data: {
-            name: data.data.name,
-            description: data.data.description,
+            slug: data.data.slug,
+            adminId: data.data.adminId,
         }
     })
     res.json({ room })
