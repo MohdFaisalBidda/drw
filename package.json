@@ -7,6 +7,9 @@
     "lint": "turbo lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\""
   },
+  "exports":{
+    "backend-common":"./packages/backend-common"
+  },
   "devDependencies": {
     "prettier": "^3.2.5",
     "turbo": "^2.3.3",
