@@ -12,9 +12,11 @@
   },
   "dependencies": {
     "@repo/ui": "*",
+    "lucide-react": "^0.471.1",
     "next": "^15.1.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@repo/eslint-config": "*",

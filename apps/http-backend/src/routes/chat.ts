@@ -1,11 +1,11 @@
 import { prisma } from "@repo/db/prisma";
-import { Router } from "express";
+import { Request, Response, Router } from "express";
 
 
 
 export const chatRouter = Router()
 
-chatRouter.get('/', async (req, res) => {
+chatRouter.get('/', async (req: Request, res: Response) => {
     try {
         const chats = await prisma.chat.findMany({
             where: {
