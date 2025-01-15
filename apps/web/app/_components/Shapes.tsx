@@ -1,13 +1,4 @@
-import {
-  Arrow,
-  Circle,
-  Diamond,
-  Draw,
-  Line,
-  Rectangle,
-  Shape,
-  Text,
-} from "../../@types/shapeStore";
+import { Circle, Line, Rectangle, Shape, Text, Draw, Arrow, Diamond } from "../../@types/shapeStore";
 
 interface ShapeProps {
   shape: Shape;
@@ -30,8 +21,13 @@ export const RectangleComponent = ({
       width={rect.width}
       height={rect.height}
       fill={shape.fillColor}
-      stroke={isSelected ? "blue" : "none"}
-      onClick={() => onSelect(shape.id)}
+      stroke={shape.strokeColor}
+      strokeWidth={shape.strokeWidth}
+      className="cursor-move"
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect(shape.id);
+      }}
       onMouseDown={(e) => onDrag(e, shape.id)}
     />
   );
@@ -50,8 +46,13 @@ export const CircleComponent = ({
       cy={shape.y}
       r={circle.radius}
       fill={shape.fillColor}
-      stroke={isSelected ? "blue" : "none"}
-      onClick={() => onSelect(shape.id)}
+      stroke={shape.strokeColor}
+      strokeWidth={shape.strokeWidth}
+      className="cursor-move"
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect(shape.id);
+      }}
       onMouseDown={(e) => onDrag(e, shape.id)}
     />
   );
@@ -70,9 +71,13 @@ export const LineComponent = ({
       y1={line.y1}
       x2={line.x2}
       y2={line.y2}
-      stroke={shape.fillColor}
-      strokeWidth={line.strokeWidth}
-      onClick={() => onSelect(shape.id)}
+      stroke={shape.strokeColor}
+      strokeWidth={shape.strokeWidth}
+      className="cursor-move"
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect(shape.id);
+      }}
       onMouseDown={(e) => onDrag(e, shape.id)}
     />
   );
@@ -89,8 +94,9 @@ export const TextComponent = ({
     <text
       x={shape.x}
       y={shape.y}
-      fill={shape.fillColor}
+      fill={shape.strokeColor}
       fontSize={text.fontSize}
+      className="cursor-move"
       onClick={(e) => {
         e.stopPropagation();
         onSelect(shape.id);
@@ -109,10 +115,12 @@ export const DrawComponent = ({
   onDrag,
 }: ShapeProps) => {
   const draw = shape as Draw;
-
   const pathData = draw.points
-    .map((pt, idx) => (idx === 0 ? `M ${pt.x} ${pt.y}` : `L ${pt.x} ${pt.y}`))
+    .map((point, index) => 
+      index === 0 ? `M ${point.x} ${point.y}` : `L ${point.x} ${point.y}`
+    )
     .join(" ");
+
   return (
     <path
       d={pathData}
@@ -141,9 +149,9 @@ export const ArrowComponent = ({
 
   const x3 = arrow.x2 - arrowLength * Math.cos(angle - Math.PI / 6);
   const y3 = arrow.y2 - arrowLength * Math.sin(angle - Math.PI / 6);
-
   const x4 = arrow.x2 - arrowLength * Math.cos(angle + Math.PI / 6);
   const y4 = arrow.y2 - arrowLength * Math.sin(angle + Math.PI / 6);
+
   return (
     <g
       className="cursor-move"
@@ -158,13 +166,13 @@ export const ArrowComponent = ({
         y1={arrow.y1}
         x2={arrow.x2}
         y2={arrow.y2}
-        stroke={shape.fillColor}
-        strokeWidth={arrow.strokeWidth}
+        stroke={shape.strokeColor}
+        strokeWidth={shape.strokeWidth}
       />
       <path
         d={`M ${arrow.x2} ${arrow.y2} L ${x3} ${y3} M ${arrow.x2} ${arrow.y2} L ${x4} ${y4}`}
-        stroke={shape.fillColor}
-        strokeWidth={arrow.strokeWidth}
+        stroke={shape.strokeColor}
+        strokeWidth={shape.strokeWidth}
         fill="none"
       />
     </g>
@@ -179,10 +187,10 @@ export const DiamondComponent = ({
 }: ShapeProps) => {
   const diamond = shape as Diamond;
   const points = [
-    `${shape.x}.${shape.y - diamond.height / 2}`,
-    `${shape.x + diamond.width / 2}.${shape.y}`,
-    `${shape.x}.${shape.y - diamond.height / 2}`,
-    `${shape.x - diamond.width / 2}.${shape.y}`,
+    `${shape.x},${shape.y - diamond.height / 2}`,
+    `${shape.x + diamond.width / 2},${shape.y}`,
+    `${shape.x},${shape.y + diamond.height / 2}`,
+    `${shape.x - diamond.width / 2},${shape.y}`,
   ].join(" ");
 
   return (
@@ -200,3 +208,4 @@ export const DiamondComponent = ({
     />
   );
 };
+
