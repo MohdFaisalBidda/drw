@@ -34,7 +34,9 @@ function Toolbar() {
           <button
             className={`${selectedTool === tool.type ? "bg-blue-500" : ""} rounded-lg p-2`}
             key={tool.type}
-            onClick={() => setSelectedTool(tool.type)}
+            onClick={() =>
+              setSelectedTool(tool.type === selectedTool ? null : tool.type)
+            }
           >
             {tool.icon}
           </button>

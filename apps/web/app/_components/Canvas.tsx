@@ -59,25 +59,9 @@ function Canvas() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.save();
 
+      ctx.translate(transform.offsetX, transform.offsetY);
       ctx.strokeStyle = "#ddd";
       ctx.lineWidth = 1;
-      const gridSize = 50;
-      const offsetX = transform.offsetX % gridSize;
-      const offsetY = transform.offsetY % gridSize;
-
-      for (let x = offsetX; x < canvas.width; x += gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, canvas.height);
-        ctx.stroke();
-      }
-
-      for (let y = offsetY; y < canvas.height; y += gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(canvas.width, y);
-        ctx.stroke();
-      }
 
       ctx.restore();
 
@@ -176,7 +160,7 @@ function Canvas() {
         ...baseShape,
         type: "text",
         content: "Text",
-        fontSize: 16,
+        fontSize: 20,
       };
       addShape(newShape);
       setEditingText({
@@ -244,8 +228,8 @@ function Canvas() {
       const dy = e.clientY - startPoint.y;
       setTransform((prev) => ({
         ...prev,
-        offsetX: prev.offsetX - dx,
-        offsetY: prev.offsetY - dy,
+        offsetX: prev.offsetX + dx,
+        offsetY: prev.offsetY + dy,
       }));
       setStartPoint({ x: e.clientX, y: e.clientY });
       return;
@@ -303,6 +287,23 @@ function Canvas() {
     setDrawPoints([]);
   };
 
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    if (e.ctrlKey) {
+      const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+      setTransform((prev) => ({
+        ...prev,
+        scale: prev.scale * zoomFactor,
+      }));
+    } else {
+      setTransform((prev) => ({
+        ...prev,
+        offsetX: prev.offsetX - e.deltaX,
+        offsetY: prev.offsetY - e.deltaY,
+      }));
+    }
+  };
+
   return (
     <>
       {/* Add Tailwind css*/}
@@ -311,6 +312,7 @@ function Canvas() {
         onMouseUp={handleMouseUp}
         onMouseMove={handleMouseMove}
         onMouseDown={handleMouseDown}
+        onWheel={handleWheel}
         className="w-full h-full"
         onContextMenu={(e) => e.preventDefault()}
       />
