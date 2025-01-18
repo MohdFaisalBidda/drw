@@ -43,7 +43,9 @@ export function drawShape(
       break
 
     case "draw":
-      if (shape.points.length > 0) {
+      if (shape.points && shape.points.length > 0) {
+        console.log(shape,"shape in canvas.ts");
+        
         ctx.beginPath()
         ctx.moveTo(shape.points[0].x, shape.points[0].y)
         shape.points.forEach((point) => {

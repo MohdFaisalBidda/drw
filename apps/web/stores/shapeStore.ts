@@ -1,11 +1,11 @@
 import { create, createStore } from "zustand";
-import { Circle, Line, Rectangle, ShapeStore } from "../@types/shapeStore";
+import { Circle, Line, Rectangle, Shape, ShapeStore } from "../@types/shapeStore";
 
 export const useShapeStore = create<ShapeStore>((set) => ({
   shapes: [],
   selectedShapeId: null,
   selectedTool: null,
-  addShape: (shape) =>
+  addShape: (shape: Shape) =>
     set((state) => ({
       shapes: [...state.shapes, shape]
     })),
@@ -21,6 +21,18 @@ export const useShapeStore = create<ShapeStore>((set) => ({
             return { ...shape, ...updates } as Circle
           }
           if (shape.type === "line") {
+            return { ...shape, ...updates } as Line
+          }
+          if (shape.type === "text") {
+            return { ...shape, ...updates } as Line
+          }
+          if (shape.type === "draw") {
+            return { ...shape, ...updates } as Line
+          }
+          if (shape.type === "diamond") {
+            return { ...shape, ...updates } as Line
+          }
+          if (shape.type === "arrow") {
             return { ...shape, ...updates } as Line
           }
         }

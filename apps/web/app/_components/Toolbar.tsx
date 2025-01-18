@@ -32,7 +32,7 @@ function Toolbar() {
       <div className="absolute w-fit inset-x-0 top-0">
         {tools.map((tool) => (
           <button
-            className={`${selectedTool === tool.type ? "bg-blue-500" : ""} rounded-lg p-2`}
+            className={`${selectedTool === tool.type ? "bg-blue-500" : ""} rounded-lg p-2 text-white`}
             key={tool.type}
             onClick={() =>
               setSelectedTool(tool.type === selectedTool ? null : tool.type)

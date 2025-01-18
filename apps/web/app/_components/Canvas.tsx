@@ -60,6 +60,7 @@ function Canvas() {
       ctx.save();
 
       ctx.translate(transform.offsetX, transform.offsetY);
+      ctx.fillStyle = "#ffffff";
       ctx.strokeStyle = "#ddd";
       ctx.lineWidth = 1;
 
@@ -71,6 +72,7 @@ function Canvas() {
         if (shape.id === selectedShapeId) {
           ctx.strokeStyle = "blue";
           ctx.lineWidth = 2;
+          ctx.fillStyle = "blue";
           ctx.setLineDash([5, 5]);
 
           switch (shape.type) {
@@ -141,7 +143,7 @@ function Canvas() {
 
     const baseShape = {
       id: uuidv4(),
-      strokeColor: "#000000",
+      strokeColor: "#ffffff",
       strokeWidth: 1,
       fillColor: "transparent",
       x: point.x,
@@ -149,6 +151,8 @@ function Canvas() {
     };
 
     if (selectedTool === "draw") {
+      console.log(point,"point in handleMouseDown")
+      
       setDrawPoints([point]);
       addShape({
         ...baseShape,
@@ -240,16 +244,16 @@ function Canvas() {
     const currentPoint = getCanvasPoint(e);
     const lastShape = shapes[shapes.length - 1]!;
 
-    if (selectedTool === "draw") {
+    if (selectedTool === "draw") {      
       const newPoints = [...drawPoints, currentPoint];
       setDrawPoints(newPoints);
-      updateShape(lastShape?.id, { points: newPoints });
+      updateShape(lastShape.id, { points: newPoints });      
       return;
     }
 
     if (selectedTool === "eraser") {
       shapes.forEach((shape) => {
-        if (!isPointInShape(currentPoint.x, currentPoint.y, shape, transform)) {
+        if (isPointInShape(currentPoint.x, currentPoint.y, shape, transform)) {
           deleteShape(shape.id);
         }
       });
@@ -258,6 +262,12 @@ function Canvas() {
 
     switch (selectedTool) {
       case "rect":
+        updateShape(lastShape.id, {
+          width: currentPoint.x - startPoint.x,
+          height: currentPoint.y - startPoint.y,
+        });
+        break;
+
       case "diamond":
         updateShape(lastShape.id, {
           width: currentPoint.x - startPoint.x,
@@ -304,6 +314,22 @@ function Canvas() {
     }
   };
 
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    const point = getCanvasPoint(e);
+    const clickedShape = shapes.find((shape) =>
+      isPointInShape(point.x, point.y, shape, transform)
+    );
+
+    if (clickedShape?.type === "text") {
+      setEditingText({
+        id: clickedShape.id,
+        x: clickedShape.x,
+        y: clickedShape.y,
+        content: clickedShape.content,
+      });
+    }
+  };
+
   return (
     <>
       {/* Add Tailwind css*/}
@@ -313,9 +339,34 @@ function Canvas() {
         onMouseMove={handleMouseMove}
         onMouseDown={handleMouseDown}
         onWheel={handleWheel}
-        className="w-full h-full"
         onContextMenu={(e) => e.preventDefault()}
+        onDoubleClick={handleDoubleClick}
+        className="w-full h-full bg-black"
       />
+      {editingText && (
+        <div
+          className="absolute"
+          style={{
+            left: editingText.x * transform.scale + transform.offsetX,
+            top: editingText.y * transform.scale + transform.offsetY,
+          }}
+        >
+          <input
+            autoFocus
+            value={editingText?.content}
+            onChange={(e) => {
+              setEditingText({ ...editingText, content: e.target.value });
+              updateShape(editingText?.id, { content: e.target.value });
+            }}
+            onBlur={() => setEditingText(null)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                setEditingText(null);
+              }
+            }}
+          />
+        </div>
+      )}
     </>
   );
 }

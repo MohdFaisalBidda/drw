@@ -53,7 +53,7 @@ authRouter.post('/signin', async (req, res) => {
             return;
         }
 
-        const token = jwt.sign({ userId: user.id }, JWT_SECRET)
+        const token = jwt.sign({ userId: user.id, name: user.name }, JWT_SECRET)
         res.json({ token })
     } catch (error) {
         res.json({ message: 'Something went wrong' })
