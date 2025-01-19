@@ -1,6 +1,7 @@
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import { WebSocketServer, WebSocket } from 'ws';
 import { JWT_SECRET } from '@repo/backend-common/config';
+import { prisma } from '@repo/db/prisma';
 
 interface Client extends WebSocket {
   userId?: string,
@@ -20,7 +21,7 @@ const rooms: Record<string, Room> = {};
 wss.on('connection', (ws: Client, req) => {
   ws.on('error', console.error);
   console.log('Client connected');
-  
+
   const url = req.url;
   if (!url) {
     ws.close();
@@ -44,7 +45,7 @@ wss.on('connection', (ws: Client, req) => {
     return
   }
 
-  ws.on('message', (data) => {
+  ws.on('message', async (data) => {
     try {
       const parsedData = JSON.parse(data.toString());
       const { type, payload } = parsedData;
@@ -53,6 +54,12 @@ wss.on('connection', (ws: Client, req) => {
         case 'JOIN_ROOM': {
           const { roomId } = payload;
           joinRoom(ws, roomId);
+          const shapes = await getShapesByRoomId(roomId);
+
+          ws.send(JSON.stringify({
+            type: "SYNC_SHAPES",
+            shapes
+          }))
           break;
         }
 
@@ -68,6 +75,61 @@ wss.on('connection', (ws: Client, req) => {
           break;
         }
 
+        case 'CREATE_SHAPE': {
+          const { roomId, shape } = payload;
+          const savedShape = await createShape(ws, roomId, shape);
+          broadcastShape(ws, roomId, {
+            type: "NEW_Shape",
+            shape: savedShape
+          });
+          break;
+        }
+
+        case "UPDATE_SHAPE": {
+          const { roomId, shape } = payload;
+
+          await prisma.shape.update({
+            where: {
+              id: shape.id
+            },
+            data: shape
+          })
+
+          broadcastShape(ws, roomId, {
+            type: "UPDATE_SHAPE",
+            shape
+          })
+          break
+        }
+
+
+        case "DELETE_SHAPE": {
+          const { roomId, shapeId } = payload;
+
+          await prisma.shape.delete({
+            where: {
+              id: shapeId
+            }
+          })
+
+          broadcastShape(ws, roomId, {
+            type: "DELETE_SHAPE",
+            shapeId
+          })
+          break
+        }
+
+        case "GET_SHAPES": {
+          const { roomId } = payload;
+          const shapes = await getShapesByRoomId(roomId);
+          ws.send(JSON.stringify({
+            type: "SYNC_SHAPES",
+            roomId,
+            shapes
+          }))
+          break;
+        }
+
         default:
           console.log("Unknown message type received", type);
           break;
@@ -79,7 +141,7 @@ wss.on('connection', (ws: Client, req) => {
   });
 
   ws.on('close', (error) => {
-    console.log('Connection closed',error);
+    console.log('Connection closed', error);
   });
 
 });
@@ -123,6 +185,36 @@ function broadcastMessage(ws: Client, message: string, roomId: string) {
         message,
         senderId: ws.name,
       }))
+    }
+  })
+}
+
+const broadcastShape = (ws: Client, roomId: string, message: any) => {
+  if (!rooms[roomId] || !ws.currentRoom) return;
+
+  const room = rooms[roomId];
+  room.members.forEach((member) => {
+    if (member.readyState === WebSocket.OPEN && member.userId !== ws.userId) {
+      member.send(JSON.stringify(message))
+    }
+  })
+}
+
+const createShape = async (ws: Client, roomId: string, shape: any) => {
+  const savedShape = await prisma.shape.create({
+    data: {
+      ...shape,
+      roomId,
+      createdBy: ws.userId
+    }
+  })
+  return savedShape
+}
+
+const getShapesByRoomId = async (roomId: string) => {
+  return await prisma.shape.findMany({
+    where: {
+      roomId: roomId
     }
   })
 }

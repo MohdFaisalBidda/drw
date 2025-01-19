@@ -7,6 +7,8 @@ import jwt from 'jsonwebtoken'
 export const authRouter = Router()
 authRouter.post('/signup', async (req, res) => {
     const data = CreateUserSchema.safeParse(req.body)
+    console.log(data.error,"data");
+    
     if (!data.success) {
         res.json({ message: 'Incorrect data' })
         return;

@@ -10,7 +10,8 @@
   "exports":{
     "backend-common":"./packages/backend-common",
     "common":"./packages/common",
-    "db":"./packages/db"
+    "db":"./packages/db",
+    "frontend":"./packages/frontend"
   },
   "devDependencies": {
     "prettier": "^3.2.5",

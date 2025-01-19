@@ -1,0 +1,18 @@
+{
+  "name": "@repo/frontend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./dist/shapeStore.d.js",
+  "exports": {
+    "./shapeStore": "./dist/shapeStore.d.js"
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "*"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

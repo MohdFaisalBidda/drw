@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import Canvas from "./Canvas"
-import Toolbar from "./Toolbar"
+import Canvas from "./Canvas";
+import Toolbar from "./Toolbar";
 
 export default function DrawingApp() {
   return (
@@ -10,6 +10,5 @@ export default function DrawingApp() {
       {/* <PropertiesPanel /> */}
       <Canvas />
     </div>
-  )
+  );
 }
-

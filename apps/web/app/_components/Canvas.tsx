@@ -4,9 +4,12 @@ import React, { useEffect, useRef, useState } from "react";
 import { useShapeStore } from "../../stores/shapeStore";
 import { drawShape, isPointInShape } from "../../utils/canvas";
 import { v4 as uuidv4 } from "uuid";
-import { Shape, Text } from "../../@types/shapeStore";
+import { Text } from "../../@types/shapeStore";
+import SettingsPanel from "./SettingsPanel";
+import { usePathname } from "next/navigation";
+import LZString from "lz-string";
 
-function Canvas() {
+function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setDrawing] = useState(false);
   const [isPanning, setIsPanning] = useState(false);
@@ -32,13 +35,58 @@ function Canvas() {
     offsetX: 0,
     offsetY: 0,
   });
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  const isAuthenticated = useShapeStore((state) => state.isAuthenticated);
+  const shareRoom = useShapeStore((state) => state.shareRoom);
   const shapes = useShapeStore((state) => state.shapes);
+  const setShapes = useShapeStore((state) => state.setShapes);
   const selectedTool = useShapeStore((state) => state.selectedTool);
   const selectedShapeId = useShapeStore((state) => state.selectedShapeId);
   const addShape = useShapeStore((state) => state.addShape);
   const updateShape = useShapeStore((state) => state.updateShape);
   const deleteShape = useShapeStore((state) => state.deleteShape);
   const setSelectedShape = useShapeStore((state) => state.setSelectedShape);
+
+  const handleShare = async () => {
+    try {
+      if (!isAuthenticated) {
+        setShowAuthModal(true);
+        return;
+      }
+
+      const roomId = await shareRoom({ slug: "test", adminId: "1" });
+      // Show success message with shareable link
+      console.log(
+        `Canvas shared! Share this link: ${window.location.origin}/canvas/${roomId}`
+      );
+    } catch (error) {
+      console.log("Failed to share canvas");
+    }
+  };
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+
+      if (message.type === "NEW_Shape") {
+        const shape = message.shape;
+        addShape(shape);
+      } else if (message.type === "SYNC_SHAPES") {
+        setShapes(message.shapes);
+      }
+    };
+
+    socket.send(
+      JSON.stringify({
+        type: "GET_SHAPES",
+        payload: {
+          roomId,
+        },
+      })
+    );
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -138,6 +186,14 @@ function Canvas() {
     if (!selectedTool) return;
 
     const point = getCanvasPoint(e);
+
+    const clickedShape = shapes.find((shape) =>
+      isPointInShape(point.x, point.y, shape, transform)
+    );
+    if (clickedShape) {
+      setSelectedShape(clickedShape.id);
+      return;
+    }
     setStartPoint(point);
     setDrawing(true);
 
@@ -151,8 +207,8 @@ function Canvas() {
     };
 
     if (selectedTool === "draw") {
-      console.log(point,"point in handleMouseDown")
-      
+      console.log(point, "point in handleMouseDown");
+
       setDrawPoints([point]);
       addShape({
         ...baseShape,
@@ -244,10 +300,10 @@ function Canvas() {
     const currentPoint = getCanvasPoint(e);
     const lastShape = shapes[shapes.length - 1]!;
 
-    if (selectedTool === "draw") {      
+    if (selectedTool === "draw") {
       const newPoints = [...drawPoints, currentPoint];
       setDrawPoints(newPoints);
-      updateShape(lastShape.id, { points: newPoints });      
+      updateShape(lastShape.id, { points: newPoints });
       return;
     }
 
@@ -333,6 +389,31 @@ function Canvas() {
   return (
     <>
       {/* Add Tailwind css*/}
+
+      {showAuthModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg">
+            <h2 className="text-xl font-bold mb-4">Sign in to Share</h2>
+            <p className="mb-4">
+              Please sign in to share your canvas with others.
+            </p>
+            <div className="flex gap-4">
+              <button
+                onClick={() => (window.location.href = "/auth/signin")}
+                className="px-4 py-2 bg-blue-500 text-white rounded"
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => setShowAuthModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <canvas
         ref={canvasRef}
         onMouseUp={handleMouseUp}
@@ -367,6 +448,8 @@ function Canvas() {
           />
         </div>
       )}
+
+      <SettingsPanel handleShare={handleShare} />
     </>
   );
 }

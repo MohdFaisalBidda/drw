@@ -28,11 +28,11 @@ function Toolbar() {
   ];
 
   return (
-    <div className="relative">
-      <div className="absolute w-fit inset-x-0 top-0">
+    <div className="fixed inset-x-0 top-5 flex items-center justify-center">
+      <div className="flex space-x-2 bg-gray-800 p-2 rounded-lg shadow-lg">
         {tools.map((tool) => (
           <button
-            className={`${selectedTool === tool.type ? "bg-blue-500" : ""} rounded-lg p-2 text-white`}
+            className={`${selectedTool === tool.type ? "bg-purple-600" : ""} rounded-lg p-2 text-white`}
             key={tool.type}
             onClick={() =>
               setSelectedTool(tool.type === selectedTool ? null : tool.type)

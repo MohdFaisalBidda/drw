@@ -34,6 +34,7 @@ model Room {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   chats     Chat[]
+  Shape     Shape[]
 }
 
 model Chat {
@@ -44,4 +45,21 @@ model Chat {
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Shape {
+  id          String   @id @default(uuid())
+  type        String   // "rect", "circle", "line", etc.
+  x           Float
+  y           Float
+  strokeColor String
+  strokeWidth Int
+  fillColor   String
+  details     Json
+  roomId      String?
+  room        Room?    @relation(fields: [roomId], references: [id])
+  createdBy   String
+  isPersonal  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
