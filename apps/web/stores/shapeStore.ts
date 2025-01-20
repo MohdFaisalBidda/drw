@@ -94,7 +94,7 @@ export const useShapeStore = create<ShapeStore>()(
 
       syncWithServer: (roomId: string) => {
         const { ws } = get();
-        if (ws) {
+        if (ws && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({
             type: "GET_SHAPES",
             payload: { roomId }

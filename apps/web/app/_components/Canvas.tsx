@@ -4,10 +4,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { useShapeStore } from "../../stores/shapeStore";
 import { drawShape, isPointInShape } from "../../utils/canvas";
 import { v4 as uuidv4 } from "uuid";
-import { Text } from "../../@types/shapeStore";
+import { Shape, Text } from "../../@types/shapeStore";
 import SettingsPanel from "./SettingsPanel";
-import { usePathname } from "next/navigation";
-import LZString from "lz-string";
 
 function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -67,14 +65,27 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
 
   useEffect(() => {
     if (!socket) return;
+
     socket.onmessage = (event) => {
       const message = JSON.parse(event.data);
 
-      if (message.type === "NEW_Shape") {
-        const shape = message.shape;
-        addShape(shape);
-      } else if (message.type === "SYNC_SHAPES") {
-        setShapes(message.shapes);
+      switch (message.type) {
+        case "NEW_SHAPE":
+          const shape = message.shape;
+          addShape(shape);
+          break;
+
+        case "SYNC_SHAPES":
+          setShapes(message.shapes);
+          break;
+
+        case "UPDATE_SHAPE":
+          updateShape(message.shape.id, message.shape);
+          break;
+
+        case "DELETE_SHAPE":
+          deleteShape(message.shapeId);
+          break;
       }
     };
 
@@ -86,7 +97,12 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
         },
       })
     );
-  }, []);
+
+    return () => {
+      console.log("socket closed");
+      socket.close();
+    };
+  }, [socket, roomId]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -177,6 +193,7 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    let newShape: Shape | null = null;
     if (e.button === 1 || e.button === 2 || e.ctrlKey) {
       setIsPanning(true);
       setStartPoint({ x: e.clientX, y: e.clientY });
@@ -207,16 +224,15 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
     };
 
     if (selectedTool === "draw") {
-      console.log(point, "point in handleMouseDown");
-
-      setDrawPoints([point]);
-      addShape({
+      newShape = {
         ...baseShape,
         type: "draw",
         points: [point],
-      });
+      };
+      setDrawPoints([point]);
+      addShape(newShape);
     } else if (selectedTool === "text") {
-      const newShape: Text = {
+      newShape = {
         ...baseShape,
         type: "text",
         content: "Text",
@@ -232,53 +248,69 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
     } else {
       switch (selectedTool) {
         case "rect":
-          addShape({
+          newShape = {
             ...baseShape,
             type: "rect",
             width: 0,
             height: 0,
-          });
+          };
           break;
 
         case "circle":
-          addShape({
+          newShape = {
             ...baseShape,
             type: "circle",
             radius: 0,
-          });
+          };
           break;
 
         case "line":
-          addShape({
+          newShape = {
             ...baseShape,
             type: "line",
             x1: point.x,
             y1: point.y,
             x2: point.x,
             y2: point.y,
-          });
+          };
           break;
 
         case "arrow":
-          addShape({
+          newShape = {
             ...baseShape,
             type: "arrow",
             x1: point.x,
             y1: point.y,
             x2: point.x,
             y2: point.y,
-          });
+          };
           break;
 
         case "diamond":
-          addShape({
+          newShape = {
             ...baseShape,
             type: "diamond",
             width: 0,
             height: 0,
-          });
+          };
           break;
       }
+      if (newShape) {
+        addShape(newShape);
+      }
+    }
+
+    // Send the new shape to other clients
+    if (socket && newShape) {
+      socket.send(
+        JSON.stringify({
+          type: "NEW_SHAPE",
+          payload: {
+            shape: newShape,
+            roomId,
+          },
+        })
+      );
     }
   };
 
@@ -299,50 +331,71 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
 
     const currentPoint = getCanvasPoint(e);
     const lastShape = shapes[shapes.length - 1]!;
+    let updates = {};
 
     if (selectedTool === "draw") {
       const newPoints = [...drawPoints, currentPoint];
       setDrawPoints(newPoints);
-      updateShape(lastShape.id, { points: newPoints });
-      return;
-    }
-
-    if (selectedTool === "eraser") {
+      updates = { points: newPoints };
+      updateShape(lastShape.id, updates);
+    } else if (selectedTool === "eraser") {
       shapes.forEach((shape) => {
         if (isPointInShape(currentPoint.x, currentPoint.y, shape, transform)) {
           deleteShape(shape.id);
+          // Notify other clients about shape deletion
+          socket?.send(
+            JSON.stringify({
+              type: "DELETE_SHAPE",
+              payload: {
+                shapeId: shape.id,
+                roomId,
+              },
+            })
+          );
         }
       });
       return;
+    } else {
+      switch (selectedTool) {
+        case "rect":
+        case "diamond":
+          updates = {
+            width: currentPoint.x - startPoint.x,
+            height: currentPoint.y - startPoint.y,
+          };
+          break;
+
+        case "circle":
+          const radius = Math.sqrt(
+            Math.pow(currentPoint.x - startPoint.x, 2) +
+              Math.pow(currentPoint.y - startPoint.y, 2)
+          );
+          updates = { radius };
+          break;
+
+        case "line":
+        case "arrow":
+          updates = {
+            x2: currentPoint.x,
+            y2: currentPoint.y,
+          };
+          break;
+      }
+      updateShape(lastShape.id, updates);
     }
 
-    switch (selectedTool) {
-      case "rect":
-        updateShape(lastShape.id, {
-          width: currentPoint.x - startPoint.x,
-          height: currentPoint.y - startPoint.y,
-        });
-        break;
-
-      case "diamond":
-        updateShape(lastShape.id, {
-          width: currentPoint.x - startPoint.x,
-          height: currentPoint.y - startPoint.y,
-        });
-        break;
-
-      case "circle":
-        const radius = Math.sqrt(
-          Math.pow(currentPoint.x - startPoint.x, 2) +
-            Math.pow(currentPoint.y - startPoint.y, 2)
-        );
-        updateShape(lastShape.id, { radius });
-        break;
-
-      case "line":
-      case "arrow":
-        updateShape(lastShape.id, { x2: currentPoint.x, y2: currentPoint.y });
-        break;
+    // Send shape updates to other clients
+    if (socket && Object.keys(updates).length > 0) {
+      socket.send(
+        JSON.stringify({
+          type: "UPDATE_SHAPE",
+          payload: {
+            shapeId: lastShape.id,
+            updates,
+            roomId,
+          },
+        })
+      );
     }
   };
 

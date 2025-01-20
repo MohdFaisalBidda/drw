@@ -19,7 +19,7 @@ export async function saveShapesToIndexedDB(shapes: Shape[]) {
   const tx = db.transaction(STORE_NAME, "readwrite");
   const store = tx.objectStore(STORE_NAME);
   await store.clear();
-  shapes.forEach((shape) => store.put(shape));
+  shapes?.forEach((shape) => store.put(shape));
   await tx.done;
 }
 

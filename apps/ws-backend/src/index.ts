@@ -124,8 +124,10 @@ wss.on('connection', (ws: Client, req) => {
           const shapes = await getShapesByRoomId(roomId);
           ws.send(JSON.stringify({
             type: "SYNC_SHAPES",
-            roomId,
-            shapes
+            payload: {
+              roomId,
+              shapes
+            }
           }))
           break;
         }
