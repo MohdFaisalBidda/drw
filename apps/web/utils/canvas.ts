@@ -3,7 +3,7 @@ import { Shape } from "../@types/shapeStore"
 export function drawShape(
   ctx: CanvasRenderingContext2D,
   shape: Shape,
-  transform: { scale: number; offsetX: number; offsetY: number }
+  transform: { scale: number; offsetX: number; offsetY: number },
 ) {
   const { scale, offsetX, offsetY } = transform
   ctx.save()
@@ -44,8 +44,8 @@ export function drawShape(
 
     case "draw":
       if (shape.points && shape.points.length > 0) {
-        console.log(shape,"shape in canvas.ts");
-        
+        console.log(shape, "shape in canvas.ts");
+
         ctx.beginPath()
         ctx.moveTo(shape.points[0].x, shape.points[0].y)
         shape.points.forEach((point) => {

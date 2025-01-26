@@ -21,6 +21,7 @@ interface ShapeActions {
   deleteShape: (id: string) => Promise<void>;
   setSelectedShape: (id: string | null) => void;
   setSelectedTool: (tool: ShapeType | null) => void;
+  setIsAuthenticated: (isAuthenticated: boolean) => void;
 
   initializeWebSocket: (token: string, roomId?: string) => void;
   handleWebSocketMessage: (event: MessageEvent) => void;
@@ -41,6 +42,8 @@ export const useShapeStore = create<ShapeStore>()(
       currentRoom: null,
       ws: null,
 
+
+      setIsAuthenticated: (isAuthenticated) => set({ isAuthenticated }),
 
       initializeWebSocket: (token: string, roomId?: string) => {
         const ws = new WebSocket("ws://localhost:8080");
@@ -65,30 +68,44 @@ export const useShapeStore = create<ShapeStore>()(
       },
 
       handleWebSocketMessage: (event: MessageEvent) => {
-        const message = JSON.parse(event.data);
-        const { type, shapes, shape, shapeId } = message;
+        const data = JSON.parse(event.data)
+        console.log("WebSocket message received:", data)
 
-        switch (type) {
-          case "SYNC_SHAPES":
-            set({ shapes });
-            break;
-          case "NEW_SHAPE":
-            set(state => ({
-              shapes: [...state.shapes, shape]
-            }));
-            break;
-          case "UPDATE_SHAPE":
-            set(state => ({
-              shapes: state.shapes.map(s =>
-                s.id === shape.id ? shape : s
-              )
-            }));
-            break;
-          case "DELETE_SHAPE":
-            set(state => ({
-              shapes: state.shapes.filter(s => s.id !== shapeId)
-            }));
-            break;
+        if (data.payload) {
+          const { shapes, shape, shapeId, roomId } = data.payload
+
+          switch (data.type) {
+            case "SYNC_SHAPES":
+              if (Array.isArray(shapes)) {
+                console.log("Syncing shapes:", shapes)
+                set({ shapes, currentRoom: roomId })
+              }
+              break
+            case "NEW_SHAPE":
+              if (shape) {
+                console.log("Adding new shape:", shape)
+                set((state) => ({
+                  shapes: [...state.shapes, shape],
+                }))
+              }
+              break
+            case "UPDATE_SHAPE":
+              if (shape) {
+                console.log("Updating shape:", shape)
+                set((state) => ({
+                  shapes: state.shapes.map((s) => (s.id === shape.id ? shape : s)),
+                }))
+              }
+              break
+            case "DELETE_SHAPE":
+              if (shapeId) {
+                console.log("Deleting shape:", shapeId)
+                set((state) => ({
+                  shapes: state.shapes.filter((s) => s.id !== shapeId),
+                }))
+              }
+              break
+          }
         }
       },
 

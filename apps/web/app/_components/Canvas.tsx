@@ -6,444 +6,499 @@ import { drawShape, isPointInShape } from "../../utils/canvas";
 import { v4 as uuidv4 } from "uuid";
 import { Shape, Text } from "../../@types/shapeStore";
 import SettingsPanel from "./SettingsPanel";
+import axios from "axios";
+import { Draw, Tool } from "../../lib/draw";
 
 function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [isDrawing, setDrawing] = useState(false);
-  const [isPanning, setIsPanning] = useState(false);
-  const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(
-    null
-  );
-
-  const [drawPoints, setDrawPoints] = useState<
-    {
-      x: number;
-      y: number;
-    }[]
-  >([]);
-  const [editingText, setEditingText] = useState<{
-    id: string;
-    x: number;
-    y: number;
-    content: string;
-  } | null>(null);
-
-  const [transform, setTransform] = useState({
-    scale: 1,
-    offsetX: 0,
-    offsetY: 0,
-  });
-  const [showAuthModal, setShowAuthModal] = useState(false);
-
-  const isAuthenticated = useShapeStore((state) => state.isAuthenticated);
-  const shareRoom = useShapeStore((state) => state.shareRoom);
-  const shapes = useShapeStore((state) => state.shapes);
-  const setShapes = useShapeStore((state) => state.setShapes);
-  const selectedTool = useShapeStore((state) => state.selectedTool);
-  const selectedShapeId = useShapeStore((state) => state.selectedShapeId);
-  const addShape = useShapeStore((state) => state.addShape);
-  const updateShape = useShapeStore((state) => state.updateShape);
-  const deleteShape = useShapeStore((state) => state.deleteShape);
-  const setSelectedShape = useShapeStore((state) => state.setSelectedShape);
-
-  const handleShare = async () => {
-    try {
-      if (!isAuthenticated) {
-        setShowAuthModal(true);
-        return;
-      }
-
-      const roomId = await shareRoom({ slug: "test", adminId: "1" });
-      // Show success message with shareable link
-      console.log(
-        `Canvas shared! Share this link: ${window.location.origin}/canvas/${roomId}`
-      );
-    } catch (error) {
-      console.log("Failed to share canvas");
-    }
-  };
+  const [draw, setDraw] = useState<Draw>();
+  const [selectedTool, setSelectedTool] = useState<Tool>("rect");
 
   useEffect(() => {
-    if (!socket) return;
+    if (canvasRef.current) {
+      const drawInstance = new Draw(canvasRef.current, roomId!, socket!);
+      setDraw(drawInstance);
 
-    socket.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-
-      switch (message.type) {
-        case "NEW_SHAPE":
-          const shape = message.shape;
-          addShape(shape);
-          break;
-
-        case "SYNC_SHAPES":
-          setShapes(message.shapes);
-          break;
-
-        case "UPDATE_SHAPE":
-          updateShape(message.shape.id, message.shape);
-          break;
-
-        case "DELETE_SHAPE":
-          deleteShape(message.shapeId);
-          break;
-      }
-    };
-
-    socket.send(
-      JSON.stringify({
-        type: "GET_SHAPES",
-        payload: {
-          roomId,
-        },
-      })
-    );
-
-    return () => {
-      console.log("socket closed");
-      socket.close();
-    };
-  }, [socket, roomId]);
+      return () => {
+        drawInstance.destroy();
+      };
+    }
+  }, [canvasRef, roomId, socket]);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    draw?.setTool(selectedTool);
+  }, [selectedTool, draw]);
+  // const canvasRef = useRef<HTMLCanvasElement>(null);
+  // const [isDrawing, setDrawing] = useState(false);
+  // const [isPanning, setIsPanning] = useState(false);
+  // const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(
+  //   null
+  // );
 
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+  // const [drawPoints, setDrawPoints] = useState<
+  //   {
+  //     x: number;
+  //     y: number;
+  //   }[]
+  // >([]);
+  // const [editingText, setEditingText] = useState<{
+  //   id: string;
+  //   x: number;
+  //   y: number;
+  //   content: string;
+  // } | null>(null);
 
-    const resizeCanvas = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
+  // const [transform, setTransform] = useState({
+  //   scale: 1,
+  //   offsetX: 0,
+  //   offsetY: 0,
+  // });
+  // const [showAuthModal, setShowAuthModal] = useState(false);
 
-    resizeCanvas();
-    window.addEventListener("resize", resizeCanvas);
+  // const isAuthenticated = useShapeStore((state) => state.isAuthenticated);
+  // const shareRoom = useShapeStore((state) => state.shareRoom);
+  // const shapes = useShapeStore((state) => state.shapes);
+  // const setShapes = useShapeStore((state) => state.setShapes);
+  // const selectedTool = useShapeStore((state) => state.selectedTool);
+  // const selectedShapeId = useShapeStore((state) => state.selectedShapeId);
+  // const addShape = useShapeStore((state) => state.addShape);
+  // const updateShape = useShapeStore((state) => state.updateShape);
+  // const deleteShape = useShapeStore((state) => state.deleteShape);
+  // const setSelectedShape = useShapeStore((state) => state.setSelectedShape);
 
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.save();
+  // const handleShare = async () => {
+  //   try {
+  //     if (!isAuthenticated) {
+  //       setShowAuthModal(true);
+  //       return;
+  //     }
 
-      ctx.translate(transform.offsetX, transform.offsetY);
-      ctx.fillStyle = "#ffffff";
-      ctx.strokeStyle = "#ddd";
-      ctx.lineWidth = 1;
+  //     const roomId = await shareRoom({ slug: "test", adminId: "1" });
+  //     // Show success message with shareable link
+  //     console.log(
+  //       `Canvas shared! Share this link: ${window.location.origin}/canvas/${roomId}`
+  //     );
+  //   } catch (error) {
+  //     console.log("Failed to share canvas");
+  //   }
+  // };
 
-      ctx.restore();
+  // useEffect(() => {
+  //   async function fetchExistingShapes() {
+  //     if (!roomId) return;
+  //     try {
+  //       const res = await axios.get(
+  //         `http://localhost:8000/api/room/${roomId}/shapes`,
+  //         {
+  //           headers: {
+  //             Authorization: `Bearer ${localStorage.getItem("token")}`,
+  //           },
+  //         }
+  //       );
+  //       const data = await res.data;
+  //       const shapes = data.shapes
+  //         .map((x: { message: string }) => {
+  //           try {
+  //             const messageData = JSON.parse(x.message);
+  //             return messageData.shape;
+  //           } catch (error) {
+  //             console.error("Error parsing shape:", error);
+  //             return null;
+  //           }
+  //         })
+  //         .filter(Boolean);
+  //       console.log(shapes, "shapes in canvas.tsx");
 
-      //drawing shapes here
-      shapes.forEach((shape) => {
-        drawShape(ctx, shape, transform);
-        if (shape.id === selectedShapeId) {
-          ctx.strokeStyle = "blue";
-          ctx.lineWidth = 2;
-          ctx.fillStyle = "blue";
-          ctx.setLineDash([5, 5]);
+  //       setShapes(shapes);
+  //     } catch (error) {
+  //       console.error("Failed to fetch existing shapes:", error);
+  //     }
+  //   }
 
-          switch (shape.type) {
-            case "rect":
-              ctx.strokeRect(
-                shape.x * transform.scale + transform.offsetX,
-                shape.y * transform.scale + transform.offsetY,
-                shape.width * transform.scale,
-                shape.height * transform.scale
-              );
-              break;
+  //   fetchExistingShapes();
+  // }, [roomId]);
 
-            case "circle":
-              ctx.beginPath();
-              ctx.arc(
-                shape.x * transform.scale + transform.offsetX,
-                shape.y * transform.scale + transform.offsetY,
-                shape.radius * transform.scale,
-                0,
-                2 * Math.PI
-              );
-              ctx.stroke();
-              break;
-          }
-          ctx.setLineDash([]);
-        }
-      });
-    };
+  // // WebSocket message handling
+  // useEffect(() => {
+  //   if (!socket) return;
 
-    let animatedFrameId: number;
-    const animate = () => {
-      draw();
-      animatedFrameId = requestAnimationFrame(animate);
-    };
-    animate();
+  //   const handleSocketMessage = (event: MessageEvent) => {
+  //     const message = JSON.parse(event.data);
 
-    console.log("Shapes in state:", shapes);
+  //     if (message.type === "NEW_MESSAGE") {
+  //       try {
+  //         const parsedShape = JSON.parse(message.message);
+  //         console.log(parsedShape, "parsedShape in canvas.tsx");
 
-    return () => {
-      window.removeEventListener("resize", resizeCanvas);
-      cancelAnimationFrame(animatedFrameId);
-    };
-  }, [shapes, selectedShapeId, transform]);
+  //         setShapes([...shapes, parsedShape.shape]);
+  //       } catch (error) {
+  //         console.error("Error parsing socket message:", error);
+  //       }
+  //     }
+  //   };
 
-  const getCanvasPoint = (e: React.MouseEvent | MouseEvent) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return { x: 0, y: 0 };
+  //   socket.addEventListener("message", handleSocketMessage);
+  //   return () => {
+  //     socket.removeEventListener("message", handleSocketMessage);
+  //   };
+  // }, [socket]);
 
-    const rect = canvas.getBoundingClientRect();
-    return {
-      x: (e.clientX - rect.left - transform.offsetX) / transform.scale,
-      y: (e.clientY - rect.top - transform.offsetY) / transform.scale,
-    };
-  };
+  // useEffect(() => {
+  //   const canvas = canvasRef.current;
+  //   if (!canvas) return;
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    let newShape: Shape | null = null;
-    if (e.button === 1 || e.button === 2 || e.ctrlKey) {
-      setIsPanning(true);
-      setStartPoint({ x: e.clientX, y: e.clientY });
-      return;
-    }
+  //   const ctx = canvas.getContext("2d");
+  //   if (!ctx) return;
 
-    if (!selectedTool) return;
+  //   const resizeCanvas = () => {
+  //     canvas.width = window.innerWidth;
+  //     canvas.height = window.innerHeight;
+  //   };
 
-    const point = getCanvasPoint(e);
+  //   resizeCanvas();
+  //   window.addEventListener("resize", resizeCanvas);
 
-    const clickedShape = shapes.find((shape) =>
-      isPointInShape(point.x, point.y, shape, transform)
-    );
-    if (clickedShape) {
-      setSelectedShape(clickedShape.id);
-      return;
-    }
-    setStartPoint(point);
-    setDrawing(true);
+  //   const draw = () => {
+  //     ctx.clearRect(0, 0, canvas.width, canvas.height);
+  //     ctx.save();
 
-    const baseShape = {
-      id: uuidv4(),
-      strokeColor: "#ffffff",
-      strokeWidth: 1,
-      fillColor: "transparent",
-      x: point.x,
-      y: point.y,
-    };
+  //     ctx.translate(transform.offsetX, transform.offsetY);
+  //     ctx.fillStyle = "#ffffff";
+  //     ctx.strokeStyle = "#ddd";
+  //     ctx.lineWidth = 1;
 
-    if (selectedTool === "draw") {
-      newShape = {
-        ...baseShape,
-        type: "draw",
-        points: [point],
-      };
-      setDrawPoints([point]);
-      addShape(newShape);
-    } else if (selectedTool === "text") {
-      newShape = {
-        ...baseShape,
-        type: "text",
-        content: "Text",
-        fontSize: 20,
-      };
-      addShape(newShape);
-      setEditingText({
-        id: newShape.id,
-        x: point.x,
-        y: point.y,
-        content: newShape.content,
-      });
-    } else {
-      switch (selectedTool) {
-        case "rect":
-          newShape = {
-            ...baseShape,
-            type: "rect",
-            width: 0,
-            height: 0,
-          };
-          break;
+  //     ctx.restore();
 
-        case "circle":
-          newShape = {
-            ...baseShape,
-            type: "circle",
-            radius: 0,
-          };
-          break;
+  //     shapes.forEach((shape) => {
+  //       drawShape(ctx, shape, transform);
+  //       if (shape.id === selectedShapeId) {
+  //         ctx.strokeStyle = "blue";
+  //         ctx.lineWidth = 2;
+  //         ctx.fillStyle = "blue";
+  //         ctx.setLineDash([5, 5]);
 
-        case "line":
-          newShape = {
-            ...baseShape,
-            type: "line",
-            x1: point.x,
-            y1: point.y,
-            x2: point.x,
-            y2: point.y,
-          };
-          break;
+  //         switch (shape.type) {
+  //           case "rect":
+  //             ctx.strokeRect(
+  //               shape.x * transform.scale + transform.offsetX,
+  //               shape.y * transform.scale + transform.offsetY,
+  //               shape.details?.width * transform.scale,
+  //               shape.details?.height * transform.scale
+  //             );
+  //             break;
 
-        case "arrow":
-          newShape = {
-            ...baseShape,
-            type: "arrow",
-            x1: point.x,
-            y1: point.y,
-            x2: point.x,
-            y2: point.y,
-          };
-          break;
+  //           case "circle":
+  //             ctx.beginPath();
+  //             ctx.arc(
+  //               shape.x * transform.scale + transform.offsetX,
+  //               shape.y * transform.scale + transform.offsetY,
+  //               shape.details?.radius * transform.scale,
+  //               0,
+  //               2 * Math.PI
+  //             );
+  //             ctx.stroke();
+  //             break;
+  //         }
+  //         ctx.setLineDash([]);
+  //       }
+  //     });
+  //   };
 
-        case "diamond":
-          newShape = {
-            ...baseShape,
-            type: "diamond",
-            width: 0,
-            height: 0,
-          };
-          break;
-      }
-      if (newShape) {
-        addShape(newShape);
-      }
-    }
+  //   let animatedFrameId: number;
+  //   const animate = () => {
+  //     draw();
+  //     animatedFrameId = requestAnimationFrame(animate);
+  //   };
+  //   animate();
 
-    // Send the new shape to other clients
-    if (socket && newShape) {
-      socket.send(
-        JSON.stringify({
-          type: "NEW_SHAPE",
-          payload: {
-            shape: newShape,
-            roomId,
-          },
-        })
-      );
-    }
-  };
+  //   console.log("Shapes in state:", shapes);
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (isPanning && startPoint) {
-      const dx = e.clientX - startPoint.x;
-      const dy = e.clientY - startPoint.y;
-      setTransform((prev) => ({
-        ...prev,
-        offsetX: prev.offsetX + dx,
-        offsetY: prev.offsetY + dy,
-      }));
-      setStartPoint({ x: e.clientX, y: e.clientY });
-      return;
-    }
+  //   return () => {
+  //     window.removeEventListener("resize", resizeCanvas);
+  //     cancelAnimationFrame(animatedFrameId);
+  //   };
+  // }, [shapes, selectedShapeId, transform, socket]);
 
-    if (!isDrawing || !startPoint || !selectedTool) return;
+  // const getCanvasPoint = (e: React.MouseEvent | MouseEvent) => {
+  //   const canvas = canvasRef.current;
+  //   if (!canvas) return { x: 0, y: 0 };
 
-    const currentPoint = getCanvasPoint(e);
-    const lastShape = shapes[shapes.length - 1]!;
-    let updates = {};
+  //   const rect = canvas.getBoundingClientRect();
+  //   return {
+  //     x: (e.clientX - rect.left - transform.offsetX) / transform.scale,
+  //     y: (e.clientY - rect.top - transform.offsetY) / transform.scale,
+  //   };
+  // };
 
-    if (selectedTool === "draw") {
-      const newPoints = [...drawPoints, currentPoint];
-      setDrawPoints(newPoints);
-      updates = { points: newPoints };
-      updateShape(lastShape.id, updates);
-    } else if (selectedTool === "eraser") {
-      shapes.forEach((shape) => {
-        if (isPointInShape(currentPoint.x, currentPoint.y, shape, transform)) {
-          deleteShape(shape.id);
-          // Notify other clients about shape deletion
-          socket?.send(
-            JSON.stringify({
-              type: "DELETE_SHAPE",
-              payload: {
-                shapeId: shape.id,
-                roomId,
-              },
-            })
-          );
-        }
-      });
-      return;
-    } else {
-      switch (selectedTool) {
-        case "rect":
-        case "diamond":
-          updates = {
-            width: currentPoint.x - startPoint.x,
-            height: currentPoint.y - startPoint.y,
-          };
-          break;
+  // const handleMouseDown = (e: React.MouseEvent) => {
+  //   let newShape: Shape | null = null;
+  //   if (e.button === 1 || e.button === 2 || e.ctrlKey) {
+  //     setIsPanning(true);
+  //     setStartPoint({ x: e.clientX, y: e.clientY });
+  //     return;
+  //   }
 
-        case "circle":
-          const radius = Math.sqrt(
-            Math.pow(currentPoint.x - startPoint.x, 2) +
-              Math.pow(currentPoint.y - startPoint.y, 2)
-          );
-          updates = { radius };
-          break;
+  //   if (!selectedTool) return;
 
-        case "line":
-        case "arrow":
-          updates = {
-            x2: currentPoint.x,
-            y2: currentPoint.y,
-          };
-          break;
-      }
-      updateShape(lastShape.id, updates);
-    }
+  //   const point = getCanvasPoint(e);
 
-    // Send shape updates to other clients
-    if (socket && Object.keys(updates).length > 0) {
-      socket.send(
-        JSON.stringify({
-          type: "UPDATE_SHAPE",
-          payload: {
-            shapeId: lastShape.id,
-            updates,
-            roomId,
-          },
-        })
-      );
-    }
-  };
+  //   const clickedShape = shapes.find((shape) =>
+  //     isPointInShape(point.x, point.y, shape, transform)
+  //   );
+  //   if (clickedShape) {
+  //     setSelectedShape(clickedShape.id);
+  //     return;
+  //   }
+  //   setStartPoint(point);
+  //   setDrawing(true);
 
-  const handleMouseUp = () => {
-    setDrawing(false);
-    setIsPanning(false);
-    setStartPoint(null);
-    setDrawPoints([]);
-  };
+  //   const baseShape = {
+  //     id: uuidv4(),
+  //     strokeColor: "#ffffff",
+  //     strokeWidth: 1,
+  //     fillColor: "transparent",
+  //     x: point.x,
+  //     y: point.y,
+  //   };
 
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    if (e.ctrlKey) {
-      const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-      setTransform((prev) => ({
-        ...prev,
-        scale: prev.scale * zoomFactor,
-      }));
-    } else {
-      setTransform((prev) => ({
-        ...prev,
-        offsetX: prev.offsetX - e.deltaX,
-        offsetY: prev.offsetY - e.deltaY,
-      }));
-    }
-  };
+  //   if (selectedTool === "draw") {
+  //     newShape = {
+  //       ...baseShape,
+  //       type: "draw",
+  //       details: {
+  //         points: [point],
+  //       },
+  //     };
+  //     setDrawPoints([point]);
+  //     addShape(newShape);
+  //   } else if (selectedTool === "text") {
+  //     newShape = {
+  //       ...baseShape,
+  //       type: "text",
+  //       details: {
+  //         fontSize: 20,
+  //         content: "Text",
+  //       },
+  //     };
+  //     addShape(newShape);
+  //     setEditingText({
+  //       id: newShape.id,
+  //       x: point.x,
+  //       y: point.y,
+  //       content: newShape.details,
+  //     });
+  //   } else {
+  //     switch (selectedTool) {
+  //       case "rect":
+  //         newShape = {
+  //           ...baseShape,
+  //           type: "rect",
+  //           details: {
+  //             width: 10,
+  //             height: 10,
+  //           },
+  //         };
+  //         break;
 
-  const handleDoubleClick = (e: React.MouseEvent) => {
-    const point = getCanvasPoint(e);
-    const clickedShape = shapes.find((shape) =>
-      isPointInShape(point.x, point.y, shape, transform)
-    );
+  //       case "circle":
+  //         newShape = {
+  //           ...baseShape,
+  //           type: "circle",
+  //           details: {
+  //             radius: 0,
+  //           },
+  //         };
+  //         break;
 
-    if (clickedShape?.type === "text") {
-      setEditingText({
-        id: clickedShape.id,
-        x: clickedShape.x,
-        y: clickedShape.y,
-        content: clickedShape.content,
-      });
-    }
-  };
+  //       case "line":
+  //         newShape = {
+  //           ...baseShape,
+  //           type: "line",
+  //           details: {
+  //             x1: point.x,
+  //             y1: point.y,
+  //             x2: point.x,
+  //             y2: point.y,
+  //           },
+  //         };
+  //         break;
+
+  //       case "arrow":
+  //         newShape = {
+  //           ...baseShape,
+  //           type: "arrow",
+  //           details: {
+  //             x1: point.x,
+  //             y1: point.y,
+  //             x2: point.x,
+  //             y2: point.y,
+  //           },
+  //         };
+  //         break;
+
+  //       case "diamond":
+  //         newShape = {
+  //           ...baseShape,
+  //           type: "diamond",
+  //           details: {
+  //             width: 10,
+  //             height: 10,
+  //           },
+  //         };
+  //         break;
+  //     }
+  //     if (newShape) {
+  //       console.log("adding shape to db", newShape);
+
+  //       addShape(newShape);
+  //     }
+  //   }
+
+  //   // Send the new shape to other clients
+  //   if (socket && newShape) {
+  //     console.log("runned");
+
+  //     socket.send(
+  //       JSON.stringify({
+  //         type: "NEW_MESSAGE",
+  //         payload: {
+  //           message: JSON.stringify(newShape),
+  //           roomId,
+  //         },
+  //       })
+  //     );
+  //   }
+  // };
+
+  // const handleMouseMove = (e: React.MouseEvent) => {
+  //   if (isPanning && startPoint) {
+  //     const dx = e.clientX - startPoint.x;
+  //     const dy = e.clientY - startPoint.y;
+  //     setTransform((prev) => ({
+  //       ...prev,
+  //       offsetX: prev.offsetX + dx,
+  //       offsetY: prev.offsetY + dy,
+  //     }));
+  //     setStartPoint({ x: e.clientX, y: e.clientY });
+  //     return;
+  //   }
+
+  //   if (!isDrawing || !startPoint || !selectedTool) return;
+
+  //   const currentPoint = getCanvasPoint(e);
+  //   const lastShape = shapes[shapes.length - 1]!;
+  //   let updates = {};
+
+  //   if (selectedTool === "draw") {
+  //     const newPoints = [...drawPoints, currentPoint];
+  //     setDrawPoints(newPoints);
+  //     updates = { points: newPoints };
+  //     updateShape(lastShape.id, updates);
+  //   } else if (selectedTool === "eraser") {
+  //     shapes.forEach((shape) => {
+  //       if (isPointInShape(currentPoint.x, currentPoint.y, shape, transform)) {
+  //         deleteShape(shape.id);
+  //         // Notify other clients about shape deletion
+  //         socket?.send(
+  //           JSON.stringify({
+  //             type: "DELETE_SHAPE",
+  //             payload: {
+  //               shapeId: shape.id,
+  //               roomId,
+  //             },
+  //           })
+  //         );
+  //       }
+  //     });
+  //     return;
+  //   } else {
+  //     switch (selectedTool) {
+  //       case "rect":
+  //       case "diamond":
+  //         updates = {
+  //           width: currentPoint.x - startPoint.x,
+  //           height: currentPoint.y - startPoint.y,
+  //         };
+  //         break;
+
+  //       case "circle":
+  //         const radius = Math.sqrt(
+  //           Math.pow(currentPoint.x - startPoint.x, 2) +
+  //             Math.pow(currentPoint.y - startPoint.y, 2)
+  //         );
+  //         updates = { radius };
+  //         break;
+
+  //       case "line":
+  //       case "arrow":
+  //         updates = {
+  //           x2: currentPoint.x,
+  //           y2: currentPoint.y,
+  //         };
+  //         break;
+  //     }
+  //     updateShape(lastShape.id, updates);
+  //   }
+
+  //   // Send shape updates to other clients
+  //   // if (socket && Object.keys(updates).length > 0) {
+  //   //   socket.send(
+  //   //     JSON.stringify({
+  //   //       type: "UPDATE_SHAPE",
+  //   //       payload: {
+  //   //         shape: { ...updates, id: lastShape.id, type: lastShape.type },
+  //   //         roomId: roomId,
+  //   //       },
+  //   //     })
+  //   //   );
+  //   // }
+  // };
+
+  // const handleMouseUp = () => {
+  //   setDrawing(false);
+  //   setIsPanning(false);
+  //   setStartPoint(null);
+  //   setDrawPoints([]);
+  // };
+
+  // const handleWheel = (e: React.WheelEvent) => {
+  //   e.preventDefault();
+  //   if (e.ctrlKey) {
+  //     const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+  //     setTransform((prev) => ({
+  //       ...prev,
+  //       scale: prev.scale * zoomFactor,
+  //     }));
+  //   } else {
+  //     setTransform((prev) => ({
+  //       ...prev,
+  //       offsetX: prev.offsetX - e.deltaX,
+  //       offsetY: prev.offsetY - e.deltaY,
+  //     }));
+  //   }
+  // };
+
+  // const handleDoubleClick = (e: React.MouseEvent) => {
+  //   const point = getCanvasPoint(e);
+  //   const clickedShape = shapes.find((shape) =>
+  //     isPointInShape(point.x, point.y, shape, transform)
+  //   );
+
+  //   if (clickedShape?.type === "text") {
+  //     setEditingText({
+  //       id: clickedShape.id,
+  //       x: clickedShape.x,
+  //       y: clickedShape.y,
+  //       content: clickedShape.content,
+  //     });
+  //   }
+  // };
 
   return (
     <>
       {/* Add Tailwind css*/}
 
-      {showAuthModal && (
+      {/* {showAuthModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg">
             <h2 className="text-xl font-bold mb-4">Sign in to Share</h2>
@@ -466,18 +521,12 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
             </div>
           </div>
         </div>
-      )}
+      )} */}
       <canvas
         ref={canvasRef}
-        onMouseUp={handleMouseUp}
-        onMouseMove={handleMouseMove}
-        onMouseDown={handleMouseDown}
-        onWheel={handleWheel}
-        onContextMenu={(e) => e.preventDefault()}
-        onDoubleClick={handleDoubleClick}
         className="w-full h-full bg-black"
       />
-      {editingText && (
+      {/* {editingText && (
         <div
           className="absolute"
           style={{
@@ -500,9 +549,9 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
             }}
           />
         </div>
-      )}
+      )} */}
 
-      <SettingsPanel handleShare={handleShare} />
+      {/* <SettingsPanel handleShare={handleShare} /> */}
     </>
   );
 }

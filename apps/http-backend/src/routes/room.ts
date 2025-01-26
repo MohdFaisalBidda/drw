@@ -32,3 +32,22 @@ roomRouter.post('/', middleware, async (req, res) => {
     }
 })
 
+roomRouter.get('/:roomId/shapes', middleware, async (req, res) => {
+    try {
+        const shapes = await prisma.shape.findMany({
+            where: {
+                roomId: req.params.roomId
+            }
+        })
+
+        if (!shapes) {
+            res.json({ message: 'Shapes does not exists' })
+            return;
+        }
+
+        res.json({ shapes })
+    } catch (error) {
+        res.json({ message: 'Something went wrong' })
+    }
+})
+

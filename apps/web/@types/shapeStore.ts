@@ -1,6 +1,6 @@
 export type ShapeType = "rect" | "circle" | "line" | "text" | "draw" | "arrow" | "diamond" | "eraser";
 
-export interface BaseShape {
+export interface Shape {
   id: string;
   type: ShapeType;
   x: number;
@@ -8,62 +8,66 @@ export interface BaseShape {
   strokeColor: string;
   strokeWidth: number;
   fillColor: string;
+  details?: Record<string, any>;
+  roomId?: string;
+  // createdBy: string;
+  isPersonal?: boolean;
 }
 
-export interface Rectangle extends BaseShape {
+export interface Rectangle extends Shape {
   type: "rect";
-  width: number;
-  height: number;
+  details: {
+    width: number;
+    height: number;
+  };
 }
 
-export interface Circle extends BaseShape {
+export interface Circle extends Shape {
   type: "circle";
-  radius: number;
+  details: {
+    radius: number;
+  };
 }
 
-export interface Line extends BaseShape {
+export interface Line extends Shape {
   type: "line";
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
+  details: {
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+  };
 }
 
-export interface Text extends BaseShape {
+export interface Text extends Shape {
   type: "text";
-  content: string;
-  fontSize: number;
+  details: {
+    content: string;
+    fontSize: number;
+  };
 }
 
-export interface Draw extends BaseShape {
+export interface Draw extends Shape {
   type: "draw";
-  points: { x: number; y: number }[];
+  details: {
+    points: { x: number; y: number }[];
+  };
 }
 
-export interface Arrow extends BaseShape {
+export interface Arrow extends Shape {
   type: "arrow";
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
+  details: {
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+  };
 }
 
-export interface Diamond extends BaseShape {
+export interface Diamond extends Shape {
   type: "diamond";
-  width: number;
-  height: number;
+  details: {
+    width: number;
+    height: number;
+  };
 }
-
-export type Shape = Rectangle | Circle | Line | Text | Draw | Arrow | Diamond;
-
-export interface ShapeStore {
-  shapes: Shape[];
-  selectedShapeId: string | null;
-  selectedTool: ShapeType | null;
-  addShape: (shape: Shape) => void;
-  updateShape: (id: string, updates: Partial<Shape>) => void;
-  deleteShape: (id: string) => void;
-  setSelectedShape: (id: string | null) => void;
-  setSelectedTool: (tool: ShapeType | null) => void;
-}
-
