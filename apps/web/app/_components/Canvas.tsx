@@ -8,6 +8,7 @@ import { Shape, Text } from "../../@types/shapeStore";
 import SettingsPanel from "./SettingsPanel";
 import axios from "axios";
 import { Draw, Tool } from "../../lib/draw";
+import Toolbar from "./Toolbar";
 
 function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -28,6 +29,9 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
   useEffect(() => {
     draw?.setTool(selectedTool);
   }, [selectedTool, draw]);
+
+  console.log(selectedTool, "selectedTool in canvas.tsx");
+  
   // const canvasRef = useRef<HTMLCanvasElement>(null);
   // const [isDrawing, setDrawing] = useState(false);
   // const [isPanning, setIsPanning] = useState(false);
@@ -522,10 +526,9 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
           </div>
         </div>
       )} */}
-      <canvas
-        ref={canvasRef}
-        className="w-full h-full bg-black"
-      />
+      <canvas ref={canvasRef} className="w-full h-full bg-black" />
+      <Toolbar selectedTool={selectedTool} setSelectedTool={setSelectedTool} />
+
       {/* {editingText && (
         <div
           className="absolute"

@@ -12,10 +12,13 @@ import {
 import { useShapeStore } from "../../stores/shapeStore";
 import { ShapeType } from "../../@types/shapeStore";
 
-function Toolbar() {
-  const selectedTool = useShapeStore((state) => state.selectedTool);
-  const setSelectedTool = useShapeStore((state) => state.setSelectedTool);
-
+function Toolbar({
+  selectedTool,
+  setSelectedTool,
+}: {
+  selectedTool: ShapeType | null;
+  setSelectedTool: (tool: ShapeType | null) => void;
+}) {
   const tools: { type: ShapeType; icon: React.ReactNode }[] = [
     { type: "rect", icon: <Square className="h-5 w-5" /> },
     { type: "circle", icon: <CircleIcon className="h-5 w-5" /> },

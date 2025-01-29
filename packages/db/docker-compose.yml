@@ -3,7 +3,7 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15 # Use the desired version of PostgreSQL
-    container_name: postgres_container
+    container_name: turbo-repo-postgres
     restart: always
     environment:
       POSTGRES_USER: postgres
