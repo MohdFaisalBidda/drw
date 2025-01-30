@@ -24,9 +24,10 @@ export class Draw {
   private currentTool: Tool = 'rect';
   private isDrawing = false;
   private startPoint: { x: number; y: number } | null = null;
+  private drawPoints: { x: number, y: number }[] = [];
   private currentShape: Shape | null = null;
   private transform = { scale: 1, offsetX: 0, offsetY: 0 };
-  private selectedTool: "circle" | "pencil" | "rect" = "rect";
+  private selectedTool: 'rect' | 'circle' | 'pencil' | 'line' | 'text' | 'arrow' | 'diamond' | 'draw' | 'eraser' = 'rect';
 
   constructor(canvas: HTMLCanvasElement, roomId: string, socket: WebSocket) {
     this.canvas = canvas;
@@ -133,9 +134,7 @@ export class Draw {
     this.isDrawing = true;
     this.currentTool = this.selectedTool;
 
-    console.log("jere");
-
-    this.currentShape = {
+    const templateShape = {
       id: uuidv4(),
       type: this.currentTool,
       strokeColor: '#ffffff',
@@ -143,25 +142,127 @@ export class Draw {
       fillColor: 'transparent',
       x: point.x,
       y: point.y,
-      details: this.currentTool === 'rect' ? { width: 0, height: 0 } : { radius: 0 },
-    };
+    }
+
+
+    switch (this.currentTool) {
+      case 'rect':
+        this.currentShape = {
+          ...templateShape,
+          type: "rect",
+          details: { width: 0, height: 0 }
+        };
+        break;
+
+      case 'circle':
+        this.currentShape = {
+          ...templateShape,
+          type: "circle",
+          details: { radius: 0 }
+        }
+        break;
+
+      case 'pencil':
+      // case "line":
+        this.currentShape = {
+          ...templateShape,
+          type: "pencil",
+          details: {
+            x1: point.x,
+            y1: point.y,
+            x2: point.x,
+            y2: point.y,
+          }
+        }
+        break;
+
+      case "arrow":
+        this.currentShape = {
+          ...templateShape,
+          type: "arrow",
+          details: {
+            x1: point.x,
+            y1: point.y,
+            x2: point.x,
+            y2: point.y,
+          }
+        }
+        break;
+
+      case "text":
+        this.currentShape = {
+          ...templateShape,
+          type: 'text',
+          details: {
+            fontSize: 20,
+            content: "Text",
+          }
+        }
+        break;
+
+      case 'diamond':
+        this.currentShape = {
+          ...templateShape,
+          type: 'diamond',
+          details: { width: 0, height: 0 }
+        }
+        break;
+
+      case 'draw':
+        this.currentShape = {
+          ...templateShape,
+          type: 'draw',
+          details: { points: [point] }
+        }
+        break;
+
+      default:
+        this.currentShape = templateShape;
+        break;
+    }
+
     this.shapes.push(this.currentShape);
   };
 
   private handleMouseMove = (e: MouseEvent) => {
     if (!this.isDrawing || !this.currentShape || !this.startPoint) return;
     const currentPoint = this.getCanvasPoint(e);
+    const dx = currentPoint.x - this.startPoint.x;
+    const dy = currentPoint.y - this.startPoint.y;
 
     console.log("currentShape.type in handleMouseMove");
 
-    if (this.currentShape.type === 'rect') {
-      this.currentShape.details.width = currentPoint.x - this.startPoint.x;
-      this.currentShape.details.height = currentPoint.y - this.startPoint.y;
-    } else if (this.currentShape.type === 'circle') {
-      this.currentShape.details.radius = Math.abs(currentPoint.x - this.startPoint.x) / 2;
-      this.currentShape.x = this.startPoint.x;
-      this.currentShape.y = this.startPoint.y;
+    switch (this.currentShape.type) {
+      case "rect":
+      case "diamond":
+        this.currentShape.details.width = dx;
+        this.currentShape.details.height = dy;
+        break;
+
+      case "circle":
+        this.currentShape.details.radius = Math.abs(dx) / 2;
+        this.currentShape.x = this.startPoint.x;
+        this.currentShape.y = this.startPoint.y;
+        break;
+
+      case "draw":
+        this.currentShape.details.points = [...this.drawPoints, currentPoint];
+        break;
+
+      case "eraser":
+        this.shapes = this.shapes.filter((shape) => !this.isPointInShape(currentPoint.x, currentPoint.y, shape, this.transform));
+        break;
+
+      case "line":
+      case "arrow":
+        this.currentShape.details.x2 = currentPoint.x;
+        this.currentShape.details.y2 = currentPoint.y;
+        break;
+
+      default:
+        break;
     }
+
     this.redraw();
   };
 
@@ -205,17 +306,139 @@ export class Draw {
 
     console.log(shape, "shape.type in drawShape");
 
-    if (shape.type === 'rect') {
-      this.ctx.strokeRect(
-        shape.x,
-        shape.y,
-        shape.details.width,
-        shape.details.height
-      );
-    } else if (shape.type === 'circle') {
-      this.ctx.beginPath();
-      this.ctx.arc(shape.x, shape.y, shape.details.radius, 0, Math.PI * 2);
-      this.ctx.stroke();
+    switch (shape.type) {
+      case "rect":
+        this.ctx.strokeRect(
+          shape.x,
+          shape.y,
+          shape.details.width,
+          shape.details.height
+        );
+        break;
+
+      case "circle":
+        this.ctx.beginPath();
+        this.ctx.arc(shape.x, shape.y, shape.details.radius, 0, Math.PI * 2);
+        this.ctx.stroke();
+        break;
+
+      // case "line":
+      //   this.ctx.beginPath();
+      //   this.ctx.moveTo(shape.details.x1, shape.details.y1);
+      //   this.ctx.lineTo(shape.details.x2, shape.details.y2);
+      //   this.ctx.stroke();
+      //   break;
+
+      case "text":
+        this.ctx.font = `${shape.details.fontSize}px sans-serif`;
+        this.ctx.fillStyle = shape.strokeColor;
+        this.ctx.fillText(shape.details.content, shape.x, shape.y);
+        break;
+
+      case "draw":
+        if (shape.details.points && shape.details.points.length > 0) {
+          this.ctx.beginPath();
+          this.ctx.moveTo(shape.details.points[0].x, shape.details.points[0].y);
+          shape.details.points.forEach((point: { x: number, y: number }) => {
+            this.ctx.lineTo(point.x, point.y);
+          });
+          this.ctx.stroke();
+        }
+        break;
+
+      case "arrow":
+        const angle = Math.atan2(shape.details.y2 - shape.details.y1, shape.details.x2 - shape.details.x1);
+        const arrowLength = 15;
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(shape.details.x1, shape.details.y1);
+        this.ctx.lineTo(shape.details.x2, shape.details.y2);
+        this.ctx.lineTo(shape.details.x2 - arrowLength * Math.cos(angle - Math.PI / 6), shape.details.y2 - arrowLength * Math.sin(angle - Math.PI / 6));
+        this.ctx.moveTo(shape.details.x2, shape.details.y2);
+        this.ctx.lineTo(shape.details.x2 - arrowLength * Math.cos(angle + Math.PI / 6), shape.details.y2 - arrowLength * Math.sin(angle + Math.PI / 6));
+        this.ctx.stroke();
+        break;
+
+      case "diamond":
+        this.ctx.beginPath();
+        this.ctx.moveTo(shape.details.x, shape.details.y - shape.details.height / 2);
+        this.ctx.lineTo(shape.details.x + shape.details.width / 2, shape.details.y);
+        this.ctx.lineTo(shape.details.x, shape.details.y + shape.details.height / 2);
+        this.ctx.lineTo(shape.details.x - shape.details.width / 2, shape.details.y);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  private pointToLineDistance(
+    A: { x: number; y: number },
+    B: { x: number; y: number },
+    C: { x: number; y: number }
+  ) {
+    const numerator = Math.abs(
+      (B.y - A.y) * C.x - (B.x - A.x) * C.y + B.x * A.y - B.y * A.x
+    )
+    const denominator = Math.sqrt(Math.pow(B.y - A.y, 2) + Math.pow(B.x - A.x, 2))
+    return numerator / denominator
+  }
+
+  private isPointInShape(
+    x: number,
+    y: number,
+    shape: Shape,
+    transform: { scale: number; offsetX: number; offsetY: number }
+  ): boolean {
+    const { scale, offsetX, offsetY } = transform
+    const tx = (x - offsetX) / scale
+    const ty = (y - offsetY) / scale
+
+    switch (shape.type) {
+      case "rect":
+        return (
+          tx >= shape.x &&
+          tx <= shape.x + shape.details.width &&
+          ty >= shape.y &&
+          ty <= shape.y + shape.details.height
+        )
+
+      case "circle":
+        const dx = tx - shape.x
+        const dy = ty - shape.y
+        return Math.sqrt(dx * dx + dy * dy) <= shape.details.radius
+
+      // case "line":
+      case "arrow":
+        const threshold = 5
+        const A = { x: shape.details.x1, y: shape.details.y1 }
+        const B = { x: shape.details.x2, y: shape.details.y2 }
+        const C = { x: tx, y: ty }
+        return this.pointToLineDistance(A, B, C) <= threshold
+
+      case "text":
+        // Simplified text hit detection
+        return (
+          tx >= shape.x &&
+          tx <= shape.x + 100 && // Approximate text width
+          ty >= shape.y - shape.details.fontSize &&
+          ty <= shape.y
+        )
+
+      case "diamond":
+        // Simplified diamond hit detection
+        return (
+          tx >= shape.x - shape.details.width / 2 &&
+          tx <= shape.x + shape.details.width / 2 &&
+          ty >= shape.y - shape.details.height / 2 &&
+          ty <= shape.y + shape.details.height / 2
+        )
+
+      default:
+        return false
     }
   }
 }
