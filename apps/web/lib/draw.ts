@@ -149,7 +149,6 @@ export class Draw {
       case 'rect':
         this.currentShape = {
           ...templateShape,
-          type: "rect",
           details: { width: 0, height: 0 }
         };
         break;
@@ -157,16 +156,14 @@ export class Draw {
       case 'circle':
         this.currentShape = {
           ...templateShape,
-          type: "circle",
           details: { radius: 0 }
         }
         break;
 
       case 'pencil':
-      // case "line":
+      case "line":
         this.currentShape = {
           ...templateShape,
-          type: "pencil",
           details: {
             x1: point.x,
             y1: point.y,
@@ -179,7 +176,6 @@ export class Draw {
       case "arrow":
         this.currentShape = {
           ...templateShape,
-          type: "arrow",
           details: {
             x1: point.x,
             y1: point.y,
@@ -192,7 +188,6 @@ export class Draw {
       case "text":
         this.currentShape = {
           ...templateShape,
-          type: 'text',
           details: {
             fontSize: 20,
             content: "Text",
@@ -203,16 +198,15 @@ export class Draw {
       case 'diamond':
         this.currentShape = {
           ...templateShape,
-          type: 'diamond',
           details: { width: 0, height: 0 }
         }
         break;
 
       case 'draw':
+        this.drawPoints = [point];
         this.currentShape = {
           ...templateShape,
-          type: 'draw',
-          details: { points: [point] }
+          details: { points: [...this.drawPoints] }
         }
         break;
 
@@ -246,7 +240,10 @@ export class Draw {
         break;
 
       case "draw":
-        this.currentShape.details.points = [...this.drawPoints, currentPoint];
+        this.drawPoints.push(currentPoint)
+        if (this.currentShape.details) {
+          this.currentShape.details.points = [...this.drawPoints];
+        }
         break;
 
       case "eraser":
@@ -322,12 +319,21 @@ export class Draw {
         this.ctx.stroke();
         break;
 
-      // case "line":
-      //   this.ctx.beginPath();
-      //   this.ctx.moveTo(shape.details.x1, shape.details.y1);
-      //   this.ctx.lineTo(shape.details.x2, shape.details.y2);
-      //   this.ctx.stroke();
-      //   break;
+      case "line":
+        if (!shape.details || shape.details.x1 === undefined) {
+          console.warn("Line shape is missing details:", shape);
+          return;
+        }
+
+        console.log(shape, "shape of line");
+
+        this.ctx.beginPath();
+        console.log(shape, "shape here");
+
+        this.ctx.moveTo(shape.details.x1, shape.details.y1);
+        this.ctx.lineTo(shape.details.x2, shape.details.y2);
+        this.ctx.stroke();
+        break;
 
       case "text":
         this.ctx.font = `${shape.details.fontSize}px sans-serif`;
@@ -361,10 +367,10 @@ export class Draw {
 
       case "diamond":
         this.ctx.beginPath();
-        this.ctx.moveTo(shape.details.x, shape.details.y - shape.details.height / 2);
-        this.ctx.lineTo(shape.details.x + shape.details.width / 2, shape.details.y);
-        this.ctx.lineTo(shape.details.x, shape.details.y + shape.details.height / 2);
-        this.ctx.lineTo(shape.details.x - shape.details.width / 2, shape.details.y);
+        this.ctx.moveTo(shape.x, shape.y - shape.details.height / 2);
+        this.ctx.lineTo(shape.x + shape.details.width / 2, shape.y);
+        this.ctx.lineTo(shape.x, shape.y + shape.details.height / 2);
+        this.ctx.lineTo(shape.x - shape.details.width / 2, shape.y);
         this.ctx.closePath();
         this.ctx.fill();
         this.ctx.stroke();
@@ -411,7 +417,7 @@ export class Draw {
         const dy = ty - shape.y
         return Math.sqrt(dx * dx + dy * dy) <= shape.details.radius
 
-      // case "line":
+      case "line":
       case "arrow":
         const threshold = 5
         const A = { x: shape.details.x1, y: shape.details.y1 }
