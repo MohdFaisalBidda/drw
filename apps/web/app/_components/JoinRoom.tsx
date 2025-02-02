@@ -6,25 +6,18 @@ import { useRouter } from "next/navigation";
 import { styles } from "../../styles/shared";
 import { Paintbrush, Plus } from "lucide-react";
 import Link from "next/link";
+import { useUser } from "../../provider/UserProvider";
 
 export default function JoinRoomPage({ allRooms }: { allRooms: any }) {
   const [roomId, setRoomId] = useState("");
   const [error, setError] = useState("");
   const router = useRouter();
+  const { user } = useUser();
 
   // Zustand store methods
   const initializeWebSocket = useShapeStore(
     (state) => state.initializeWebSocket
   );
-  const isAuthenticated = useShapeStore((state) => state.isAuthenticated);
-  const setIsAuthenticated = useShapeStore((state) => state.setIsAuthenticated);
-
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      setIsAuthenticated(true);
-    }
-  }, []);
 
   const handleJoinRoom = async () => {
     if (!roomId.trim()) {
@@ -32,21 +25,11 @@ export default function JoinRoomPage({ allRooms }: { allRooms: any }) {
       return;
     }
 
-    if (!isAuthenticated) {
-      setError("Please sign in to join a room");
-      return;
-    }
-
     try {
       // Get auth token from localStorage
-      const token = localStorage.getItem("token");
-      if (!token) {
-        setError("Authentication token not found");
-        return;
-      }
 
       // Initialize WebSocket and join room
-      initializeWebSocket(token, roomId);
+      initializeWebSocket(user, roomId);
 
       // Redirect to canvas page
       router.push(`/draw/${roomId}`);
@@ -89,7 +72,7 @@ export default function JoinRoomPage({ allRooms }: { allRooms: any }) {
 
           <button
             onClick={handleJoinRoom}
-            className={`${styles.button.secondary} bg-green-600 hover:bg-green-700 text-white`}
+            className={`${styles.button.secondary}`}
           >
             Join Room
           </button>

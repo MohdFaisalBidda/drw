@@ -108,7 +108,7 @@ function RoomCanvas({ roomId }: { roomId: string }) {
             - Event: ${JSON.stringify(event)}
           `;
 
-          console.error("WebSocket error:", errorDetails);
+          console.log("WebSocket error:", errorDetails);
           setConnectionDetails(errorDetails);
 
           setIsConnecting(false);
@@ -207,7 +207,6 @@ function RoomCanvas({ roomId }: { roomId: string }) {
 
   return (
     <>
-      <Toolbar />
       <Canvas roomId={roomId} socket={socket} />
     </>
   );

@@ -9,17 +9,16 @@ import {
   Diamond,
   Eraser,
 } from "lucide-react";
-import { useShapeStore } from "../../stores/shapeStore";
-import { ShapeType } from "../../@types/shapeStore";
+import { Tool } from "../../lib/draw";
 
 function Toolbar({
   selectedTool,
   setSelectedTool,
 }: {
-  selectedTool: ShapeType | null;
-  setSelectedTool: (tool: ShapeType | null) => void;
+  selectedTool: Tool | null;
+  setSelectedTool: (tool: Tool | null) => void;
 }) {
-  const tools: { type: ShapeType; icon: React.ReactNode }[] = [
+  const tools: { type: Tool; icon: React.ReactNode }[] = [
     { type: "rect", icon: <Square className="h-5 w-5" /> },
     { type: "circle", icon: <CircleIcon className="h-5 w-5" /> },
     { type: "line", icon: <Minus className="h-5 w-5" /> },

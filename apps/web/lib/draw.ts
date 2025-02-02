@@ -27,7 +27,9 @@ export class Draw {
   private drawPoints: { x: number, y: number }[] = [];
   private currentShape: Shape | null = null;
   private transform = { scale: 1, offsetX: 0, offsetY: 0 };
-  private selectedTool: 'rect' | 'circle' | 'pencil' | 'line' | 'text' | 'arrow' | 'diamond' | 'draw' | 'eraser' = 'rect';
+  private selectedTool: Tool = 'rect';
+  private deletedShapeIds: Set<string> = new Set();
+  private shapeIdMap: Map<string, string> = new Map();
 
   constructor(canvas: HTMLCanvasElement, roomId: string, socket: WebSocket) {
     this.canvas = canvas;
@@ -56,7 +58,7 @@ export class Draw {
     this.canvas.removeEventListener("wheel", this.handleWheel)
   }
 
-  setTool(tool: "circle" | "pencil" | "rect") {
+  setTool(tool: Tool) {
     this.selectedTool = tool;
   }
 
@@ -93,7 +95,7 @@ export class Draw {
         try {
           return JSON.parse(x.message);
         } catch (error) {
-          console.error('Invalid JSON in shape message:', x.message, error);
+          console.log('Invalid JSON in shape message:', x.message, error);
           return null;
         }
       }).filter(Boolean);
@@ -115,11 +117,24 @@ export class Draw {
     this.socket.addEventListener('message', (event) => {
       try {
         const message = JSON.parse(event.data);
+
         if (message.type === 'NEW_MESSAGE') {
           const shape = JSON.parse(message.payload.message);
-          console.log(shape, "shape in socket");
+          const dbShape = message.payload.shape;
 
-          this.shapes.push(shape);
+          if (dbShape && dbShape.id) {
+            this.shapeIdMap.set(shape.id, dbShape.id);
+            shape.id = dbShape.id;
+          }
+
+          if (!this.deletedShapeIds.has(shape.id)) {
+            this.shapes.push(shape);
+            this.redraw();
+          }
+        }
+
+        if (message.type === 'DELETE_SHAPE') {
+          this.shapes = this.shapes.filter((shape) => shape.id !== message.payload.shapeId);
           this.redraw();
         }
       } catch (error) {
@@ -218,6 +233,19 @@ export class Draw {
     this.shapes.push(this.currentShape);
   };
 
+  private isPointNear(x1: number, y1: number, x2: number, y2: number, threshold: number): boolean {
+    return Math.abs(x1 - x2) < threshold && Math.abs(y1 - y2) < threshold;
+  }
+
+  private sendDeleteRequest(shapeId: string) {
+    this.socket.send(
+      JSON.stringify({
+        type: 'DELETE_SHAPE',
+        payload: { shapeId, roomId: this.roomId },
+      })
+    );
+  }
+
   private handleMouseMove = (e: MouseEvent) => {
     if (!this.isDrawing || !this.currentShape || !this.startPoint) return;
     const currentPoint = this.getCanvasPoint(e);
@@ -247,7 +275,29 @@ export class Draw {
         break;
 
       case "eraser":
-        this.shapes = this.shapes.filter((shape) => !this.isPointInShape(currentPoint.x, currentPoint.y, shape, this.transform));
+        const shapesToKeep = this.shapes.filter((shape) => {
+          let shouldDelete = false;
+          if (shape.type === "draw") {
+            shouldDelete = shape.details.points.some((point: { x: number; y: number }) =>
+              this.isPointNear(point.x, point.y, currentPoint.x, currentPoint.y, 10) // Increase 10 for bigger eraser size
+            );
+          } else {
+            // For all other shapes, use regular check
+            shouldDelete = this.isPointInShape(currentPoint.x, currentPoint.y, shape, this.transform);
+          }
+
+          if (shouldDelete) {
+            this.sendDeleteRequest(shape.id);
+            return false;
+          }
+          return true;
+        });
+
+        if (shapesToKeep.length !== this.shapes.length) {
+          this.shapes = shapesToKeep;
+          this.redraw();
+        }
+
         break;
 
       case "line":
@@ -266,7 +316,14 @@ export class Draw {
   private handleMouseUp = () => {
     if (!this.isDrawing || !this.currentShape) return;
     this.isDrawing = false;
-    this.sendShapeToServer(this.currentShape);
+    console.log("ruuned here while deleting", this.currentShape);
+
+    if (this.selectedTool !== "eraser" && this.currentShape) {
+      this.sendShapeToServer(this.currentShape);
+    }
+
+    this.deletedShapeIds.clear()
+    this.currentShape = null;
   };
 
   private sendShapeToServer(shape: Shape) {

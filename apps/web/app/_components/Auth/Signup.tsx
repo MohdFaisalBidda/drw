@@ -6,8 +6,10 @@ import { Palette, Users, Zap } from "lucide-react";
 import Link from "next/link";
 import { styles } from "../../../styles/shared";
 import { useRouter } from "next/navigation";
+import { useUser } from "../../../provider/UserProvider";
 
 function Signup() {
+  const { setUser } = useUser();
   const [userData, setUserData] = useState({
     username: "",
     email: "",
@@ -29,6 +31,7 @@ function Signup() {
     if (userData.username && userData.email && userData.password) {
       const res = await createUser(userData);
       localStorage.setItem("token", res.data?.token);
+      setUser(res.data?.token);
       router.push("/join-room");
     } else {
       setError("Please fill in all fields");

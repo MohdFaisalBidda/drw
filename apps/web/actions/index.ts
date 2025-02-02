@@ -1,3 +1,7 @@
+"use server"
+
+import { cookies } from "next/headers";
+
 export interface ICreateRoom {
     adminId: string;
     slug: string;
@@ -34,6 +38,11 @@ export const createUser = async ({ username, email, password }: ICreateUser) => 
 
         const token = await SigninAction({ username: createdUserData.data.username, password: createdUserData.data.password });
 
+        ((await cookies()).set("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            path: "/",
+        }))
         return {
             success: true,
             data: {
@@ -62,7 +71,14 @@ export const SigninAction = async ({ username, password }: { username: string, p
             })
         })
 
-        const userData = await user.json()
+        const userData = await user.json();
+        console.log(userData, "userData");
+
+        (await cookies()).set("token", userData.token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            path: "/",
+        })
         return userData;
     } catch (error) {
         console.log(error);

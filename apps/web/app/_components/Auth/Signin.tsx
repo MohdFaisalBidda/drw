@@ -6,8 +6,10 @@ import { useRouter } from "next/navigation";
 import { Paintbrush, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { styles } from "../../../styles/shared";
+import { useUser } from "../../../provider/UserProvider";
 
 function Signin() {
+  const { user, setUser } = useUser();
   const router = useRouter();
   const [userData, setUserData] = useState({
     username: "",
@@ -32,6 +34,7 @@ function Signin() {
       console.log(res, "res");
       if (res) {
         localStorage.setItem("token", res.token);
+        setUser(res.token);
         router.push("/");
       }
     } else {
@@ -91,7 +94,7 @@ function Signin() {
                 Sign In
               </button>
             </form>
-
+{/* 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-200" />
@@ -107,7 +110,7 @@ function Signin() {
               <span className="flex items-center justify-center gap-2">
                 Continue with Google
               </span>
-            </button>
+            </button> */}
 
             <p className="text-center text-sm text-gray-600">
               Don't have an account?{" "}

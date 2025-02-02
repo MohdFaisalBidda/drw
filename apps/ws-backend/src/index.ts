@@ -81,6 +81,13 @@ wss.on('connection', (ws: Client, req) => {
           break;
         }
 
+        case "DELETE_SHAPE": {
+          const { shapeId, roomId } = payload;
+          console.log(shapeId, "shapeId in DELETE_SHAPE");
+          await deleteShape(ws, shapeId, roomId);
+          break;
+        }
+
         default:
           console.log("Unknown message type received", type);
           break;
@@ -111,11 +118,9 @@ async function joinRoom(ws: Client, roomId: string) {
   rooms[roomId].members.add(ws);
   ws.currentRoom = roomId;
   console.log(ws.currentRoom, roomId, "join room here");
-
-  // await broadcastMessage(ws, `${ws.userId} joined the room`, roomId);
 }
 
-function leaveRoom(ws: Client) {
+async function leaveRoom(ws: Client) {
   if (!ws.currentRoom || !rooms[ws.currentRoom]) return;
 
   const room = rooms[ws.currentRoom];
@@ -123,11 +128,56 @@ function leaveRoom(ws: Client) {
 
   if (room?.members.size === 0) {
     delete rooms[ws.currentRoom];
-  } else {
-    broadcastMessage(ws, `${ws.name} left the room`, ws.currentRoom);
+    try {
+      await prisma.room.deleteMany({
+        where: {
+          id: ws.currentRoom
+        }
+      })
+
+      await prisma.room.delete({
+        where: {
+          id: ws.currentRoom
+        }
+      })
+    } catch (error) {
+      console.log(error, "error in cleaning up room");
+
+    }
   }
 
   ws.currentRoom = undefined;
+}
+
+async function deleteShape(ws: Client, shapeId: string, roomId: string) {
+  try {
+    console.log(shapeId, "shapeId in deleteShape");
+
+    await prisma.shape.delete({
+      where: {
+        id: shapeId,
+        roomId
+      }
+    })
+
+    const room = rooms[roomId];
+    if (room) {
+      room.members.forEach((member) => {
+        if (member.readyState === WebSocket.OPEN && member.userId !== ws.userId) {
+          member.send(JSON.stringify({
+            type: 'DELETE_SHAPE',
+            payload: {
+              shapeId,
+              roomId
+            }
+          }))
+        }
+      })
+    }
+  } catch (error) {
+    console.log(error, "error in deleteShape");
+
+  }
 }
 
 
@@ -137,7 +187,7 @@ async function broadcastMessage(ws: Client, message: string, roomId: string) {
 
   console.log(message, ws, roomId, "message in broadcastMessage");
 
-  await prisma.shape.create({
+  const savedShape = await prisma.shape.create({
     data: {
       message,
       roomId,
@@ -156,6 +206,7 @@ async function broadcastMessage(ws: Client, message: string, roomId: string) {
         payload: {
           roomId,
           message,
+          shape: savedShape
         }
       }))
     }
