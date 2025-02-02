@@ -6,6 +6,15 @@ import { prisma } from "@repo/db/prisma";
 
 export const roomRouter = Router()
 
+roomRouter.get('/', async (req, res) => {
+    try {
+        const rooms = await prisma.room.findMany()
+        res.json({ rooms })
+    } catch (error) {
+        res.json({ message: 'Something went wrong' })
+    }
+})
+
 roomRouter.post('/', middleware, async (req, res) => {
     const data = CreateRoomSchema.safeParse(req.body)
     if (!data.success) {

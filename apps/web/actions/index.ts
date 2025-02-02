@@ -32,10 +32,12 @@ export const createUser = async ({ username, email, password }: ICreateUser) => 
             }
         }
 
+        const token = await SigninAction({ username: createdUserData.data.username, password: createdUserData.data.password });
+
         return {
             success: true,
             data: {
-                user: createdUser
+                token
             }
         }
     } catch (error) {
@@ -102,5 +104,34 @@ export const createRoom = async ({ slug, adminId }: ICreateRoom) => {
             success: false,
             error
         }
+    }
+}
+
+
+export const getAllRooms = async () => {
+    try {
+        const rooms = await fetch(`http://localhost:8000/api/room`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        })
+
+        const roomsData = await rooms.json()
+        console.log(roomsData, "roomsData herer");
+
+        return {
+            success: true,
+            data: {
+                rooms: roomsData.rooms
+            }
+        }
+    } catch (error) {
+        console.log(error);
+        return {
+            success: false,
+            error
+        }
+
     }
 }
