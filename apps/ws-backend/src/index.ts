@@ -151,12 +151,11 @@ async function leaveRoom(ws: Client) {
 
 async function deleteShape(ws: Client, shapeId: string, roomId: string) {
   try {
-    console.log(shapeId, "shapeId in deleteShape");
+    console.log(shapeId,roomId,ws.userId, "shapeId in deleteShape");
 
     await prisma.shape.delete({
       where: {
         id: shapeId,
-        roomId
       }
     })
 
@@ -168,7 +167,8 @@ async function deleteShape(ws: Client, shapeId: string, roomId: string) {
             type: 'DELETE_SHAPE',
             payload: {
               shapeId,
-              roomId
+              roomId,
+              userId: ws.userId
             }
           }))
         }

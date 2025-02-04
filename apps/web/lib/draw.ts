@@ -47,7 +47,12 @@ export class Draw {
   }
 
   async init() {
-    this.shapes = await this.fetchExistingShapes();
+    const data = await this.fetchExistingShapes();
+    console.log(data, this.shapes, "data in init");
+    this.shapes = data.message;
+    this.shapeIdMap = new Map(this.shapes.map((shape, index) => [shape.id, data.id[index.toString()] as string]));
+    console.log(this.shapeIdMap, "this.shapeIdMap in init");
+
     this.redraw();
   }
 
@@ -86,22 +91,28 @@ export class Draw {
     this.redraw();
   };
 
-  private async fetchExistingShapes() {
+  private async fetchExistingShapes(): Promise<{ id: Record<string, string>, message: Shape[] }> {
     try {
       const response = await axios.get(`${HTTP_URL}/api/room/${this.roomId}/shapes`);
       console.log(response.data.shapes, "response in fetch");
 
-      return response.data.shapes.map((x: { message: string }) => {
+      const message: Shape[] = [];
+      const idMap: Record<string, string> = {};
+
+      response.data.shapes.forEach((x: { id: string, message: string }, index: number) => {
         try {
-          return JSON.parse(x.message);
+          const parsedMessage = JSON.parse(x.message);
+          message.push(parsedMessage);
+          idMap[index.toString()] = x.id; // Index as key, shape id as value
         } catch (error) {
           console.log('Invalid JSON in shape message:', x.message, error);
-          return null;
         }
-      }).filter(Boolean);
+      });
+
+      return { id: idMap, message };
     } catch (error) {
       console.error('Failed to fetch shapes:', error);
-      return [];
+      return { id: {}, message: [] };
     }
   }
 
@@ -238,6 +249,7 @@ export class Draw {
   }
 
   private sendDeleteRequest(shapeId: string) {
+    console.log(shapeId, "shapeId in sendDeleteRequest");
     this.socket.send(
       JSON.stringify({
         type: 'DELETE_SHAPE',
@@ -287,7 +299,8 @@ export class Draw {
           }
 
           if (shouldDelete) {
-            this.sendDeleteRequest(shape.id);
+            console.log(this.shapeIdMap, this.shapes, this.shapeIdMap.get(shape.id), "this.shapeIdMap.get(shape.id) in delete");
+            this.sendDeleteRequest(this.shapeIdMap.get(shape.id)!);
             return false;
           }
           return true;
