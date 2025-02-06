@@ -7,8 +7,8 @@ import jwt from 'jsonwebtoken'
 export const authRouter = Router()
 authRouter.post('/signup', async (req, res) => {
     const data = CreateUserSchema.safeParse(req.body)
-    console.log(data.error,"data");
-    
+    console.log(data.error, "data");
+
     if (!data.success) {
         res.json({ message: 'Incorrect data' })
         return;
@@ -56,7 +56,7 @@ authRouter.post('/signin', async (req, res) => {
         }
 
         const token = jwt.sign({ userId: user.id, name: user.name }, JWT_SECRET)
-        res.json({ token })
+        res.json({ token, user })
     } catch (error) {
         res.json({ message: 'Something went wrong' })
     }

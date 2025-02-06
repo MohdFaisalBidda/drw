@@ -15,13 +15,14 @@ roomRouter.get('/', async (req, res) => {
     }
 })
 
-roomRouter.post('/', middleware, async (req, res) => {
+roomRouter.post('/', async (req, res) => {
     const data = CreateRoomSchema.safeParse(req.body)
     if (!data.success) {
         res.json({ message: 'Incorrect data' })
         return;
     }
 
+    console.log(data,"data");
     try {
         const room = await prisma.room.create({
             data: {
@@ -29,6 +30,9 @@ roomRouter.post('/', middleware, async (req, res) => {
                 adminId: data.data.adminId,
             }
         })
+
+            console.log(room,"room after");
+            
 
         if (!room) {
             res.json({ message: 'Room already exists' })

@@ -129,16 +129,22 @@ async function leaveRoom(ws: Client) {
   if (room?.members.size === 0) {
     delete rooms[ws.currentRoom];
     try {
-      await prisma.room.deleteMany({
+      // await prisma.room.deleteMany({
+      //   where: {
+      //     id: ws.currentRoom
+      //   }
+      // })
+
+      await prisma.shape.deleteMany({
         where: {
-          id: ws.currentRoom
+          roomId: ws.currentRoom
         }
       })
-
+      
       await prisma.room.delete({
         where: {
           id: ws.currentRoom
-        }
+        },
       })
     } catch (error) {
       console.log(error, "error in cleaning up room");
@@ -151,7 +157,7 @@ async function leaveRoom(ws: Client) {
 
 async function deleteShape(ws: Client, shapeId: string, roomId: string) {
   try {
-    console.log(shapeId,roomId,ws.userId, "shapeId in deleteShape");
+    console.log(shapeId, roomId, ws.userId, "shapeId in deleteShape");
 
     await prisma.shape.delete({
       where: {

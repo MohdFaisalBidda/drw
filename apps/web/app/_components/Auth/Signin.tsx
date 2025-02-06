@@ -34,7 +34,7 @@ function Signin() {
       console.log(res, "res");
       if (res) {
         localStorage.setItem("token", res.token);
-        setUser(res.token);
+        setUser({ token: res.token, ...res.user });
         router.push("/");
       }
     } else {
@@ -94,7 +94,7 @@ function Signin() {
                 Sign In
               </button>
             </form>
-{/* 
+            {/* 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-200" />

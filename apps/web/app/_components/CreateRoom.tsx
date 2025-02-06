@@ -10,12 +10,15 @@ import {
   Lock,
 } from "lucide-react";
 import Link from "next/link";
+import { createRoom } from "../../actions";
+import { useUser } from "../../provider/UserProvider";
 
 export default function CreateRoomPage() {
   const [roomName, setRoomName] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
   const [maxParticipants, setMaxParticipants] = useState("10");
   const [error, setError] = useState("");
+  const { user } = useUser();
   const router = useRouter();
 
   const handleCreateRoom = async (e: React.FormEvent) => {
@@ -25,9 +28,19 @@ export default function CreateRoomPage() {
       return;
     }
 
+    try {
+      console.log(user, "user in createRoom");
+
+      const res = await createRoom({ slug: roomName, user });
+      console.log(res, "res in createRoom");
+
+      const roomId = res.data?.roomData.id;
+      router.push(`/draw/${roomId}`);
+    } catch (error) {
+      console.log(error, "err");
+    }
+
     // Demo implementation
-    const roomId = `room-${Date.now()}`;
-    router.push(`/draw/${roomId}`);
   };
 
   return (
@@ -62,7 +75,7 @@ export default function CreateRoomPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label
                     htmlFor="maxParticipants"
@@ -101,7 +114,7 @@ export default function CreateRoomPage() {
                     </label>
                   </div>
                 </div>
-              </div>
+              </div> */}
 
               {error && <div className={styles.error}>{error}</div>}
 

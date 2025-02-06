@@ -29,7 +29,7 @@ export default function JoinRoomPage({ allRooms }: { allRooms: any }) {
       // Get auth token from localStorage
 
       // Initialize WebSocket and join room
-      initializeWebSocket(user, roomId);
+      initializeWebSocket(user.token, roomId);
 
       // Redirect to canvas page
       router.push(`/draw/${roomId}`);
@@ -72,7 +72,7 @@ export default function JoinRoomPage({ allRooms }: { allRooms: any }) {
 
           <button
             onClick={handleJoinRoom}
-            className={`${styles.button.secondary}`}
+            className={`${styles.button.primary}`}
           >
             Join Room
           </button>
@@ -80,7 +80,7 @@ export default function JoinRoomPage({ allRooms }: { allRooms: any }) {
           <div className="mb-8">
             <Link href="/create-room">
               <button
-                className={`${styles.button.primary} !bg-green-600 hover:!bg-green-700`}
+                className={`${styles.button.secondary} !bg-green-600 hover:!bg-green-700`}
               >
                 <span className="flex items-center justify-center gap-2">
                   <Plus className="w-5 h-5" />

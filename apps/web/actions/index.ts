@@ -3,7 +3,7 @@
 import { cookies } from "next/headers";
 
 export interface ICreateRoom {
-    adminId: string;
+    user: any
     slug: string;
 }
 
@@ -86,42 +86,56 @@ export const SigninAction = async ({ username, password }: { username: string, p
     }
 }
 
-export const createRoom = async ({ slug, adminId }: ICreateRoom) => {
+export const createRoom = async ({ slug, user }: ICreateRoom) => {
     try {
+        console.log(user, "user in createRoom before fetch");
+
+        if (!user || !user.token || !user.id) {
+            throw new Error("User authentication missing");
+        }
+
+        console.log(user, "user in createRoom before API call");
+
         const room = await fetch(`http://localhost:8000/api/room`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
+                "Authorization": `Bearer ${user.token}`
             },
             body: JSON.stringify({
                 slug,
-                adminId
+                adminId: user.id
             })
-        })
+        });
 
-        const roomData = await room.json()
+        console.log(room, "room after fetch");
 
-        if (!roomData.success) {
-            return {
-                success: false,
-                error: roomData.error
-            }
+        if (!room.ok) {
+            throw new Error(`API Error: ${room.status} ${room.statusText}`);
         }
 
+        const roomData = await room.json();
+        console.log(roomData, "roomData in createRoom");
+
+        if (!roomData.room) {
+            throw new Error(roomData.error || "Room creation failed");
+        }
 
         return {
             success: true,
             data: {
-                roomId: roomData.roomId
+                roomData:roomData.room
             }
-        }
+        };
     } catch (error) {
+        console.error(error, "Error in createRoom");
         return {
             success: false,
-            error
-        }
+            error: error
+        };
     }
-}
+};
+
 
 
 export const getAllRooms = async () => {
