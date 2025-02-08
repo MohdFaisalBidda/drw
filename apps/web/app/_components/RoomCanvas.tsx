@@ -95,9 +95,9 @@ function RoomCanvas({ roomId }: { roomId: string }) {
           setConnectionDetails(closeDetails);
 
           setIsConnecting(false);
-          setError(
-            `Connection closed: ${closureDescription}. Please refresh the page.`
-          );
+          // setError(
+          //   `Connection closed: ${closureDescription}. Please refresh the page.`
+          // );
         });
 
         ws.addEventListener("error", (event) => {
@@ -112,7 +112,7 @@ function RoomCanvas({ roomId }: { roomId: string }) {
           setConnectionDetails(errorDetails);
 
           setIsConnecting(false);
-          setError("Connection error. Please refresh the page.");
+          // setError("Connection error. Please refresh the page.");
         });
       } catch (err) {
         clearInterval(heartBeatInterval!);

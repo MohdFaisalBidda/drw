@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { getAllRooms } from "../actions";
 import JoinRoomPage from "./_components/JoinRoom";
 import { redirect } from "next/navigation";
+import Header from "./_components/Header";
 
 export default async function Home() {
   const token = (await cookies()).get("token")?.value;
@@ -12,5 +13,10 @@ export default async function Home() {
   }
 
   const allRooms = await getAllRooms();
-  return <JoinRoomPage allRooms={allRooms.data?.rooms} />;
+  return (
+    <>
+      {/* <Header /> */}
+      <JoinRoomPage allRooms={allRooms.data?.rooms} />
+    </>
+  );
 }

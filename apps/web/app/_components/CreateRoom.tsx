@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { styles } from "../../styles/shared";
 import {
@@ -20,6 +20,10 @@ export default function CreateRoomPage() {
   const [error, setError] = useState("");
   const { user } = useUser();
   const router = useRouter();
+
+  useEffect(() => {
+    console.log(user, "user in useEffect");
+  }, [user]);
 
   const handleCreateRoom = async (e: React.FormEvent) => {
     e.preventDefault();

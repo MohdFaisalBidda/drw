@@ -3,13 +3,14 @@
 import React, { useState } from "react";
 import { SigninAction } from "../../../actions";
 import { useRouter } from "next/navigation";
-import { Paintbrush, Sparkles } from "lucide-react";
+import { Loader2, Paintbrush, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { styles } from "../../../styles/shared";
 import { useUser } from "../../../provider/UserProvider";
 
 function Signin() {
   const { user, setUser } = useUser();
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const [userData, setUserData] = useState({
     username: "",
@@ -30,6 +31,7 @@ function Signin() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (userData.username && userData.password) {
+      setIsLoading(true);
       const res = await SigninAction(userData);
       console.log(res, "res");
       if (res) {
@@ -38,6 +40,7 @@ function Signin() {
         router.push("/");
       }
     } else {
+      setIsLoading(false);
       setError("Please fill in all fields");
     }
   };
@@ -91,7 +94,11 @@ function Signin() {
               {error && <div className={styles.error}>{error}</div>}
 
               <button type="submit" className={styles.button.primary}>
-                Sign In
+                {!isLoading ? (
+                  "Sign In"
+                ) : (
+                  <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                )}
               </button>
             </form>
             {/* 
