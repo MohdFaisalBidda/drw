@@ -3,16 +3,32 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Draw, Tool } from "../../lib/draw";
 import Toolbar from "./Toolbar";
+import { Minus, Plus } from "lucide-react";
 
 function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [draw, setDraw] = useState<Draw>();
   const [selectedTool, setSelectedTool] = useState<Tool | null>("rect");
   const [showLeaveConfirmation, setShowLeaveConfirmation] = useState(false);
+  const [scale, setScale] = useState(draw?.transform.scale || 1);
+  const [editingText, setEditingText] = useState<{
+    id: string;
+    x: number;
+    y: number;
+    content: string;
+  } | null>(null);
 
   useEffect(() => {
     if (canvasRef.current) {
-      const drawInstance = new Draw(canvasRef.current, roomId!, socket!);
+      const drawInstance = new Draw(
+        canvasRef.current,
+        roomId!,
+        socket!,
+        (text) => {
+          console.log("setEditingText called with:", text);
+          setEditingText(text);
+        }
+      );
       setDraw(drawInstance);
 
       return () => {
@@ -39,40 +55,28 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
     window.location.href = "/"; // Redirect to the home or dashboard
   };
 
+  const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (editingText) {
+      const newText = {
+        ...editingText,
+        content: e.target.value,
+      };
+      console.log("Updating text to:", newText);
+      setEditingText(newText);
+      draw?.updateTextContent(editingText.id, e.target.value);
+    }
+  };
+
+  const handleTextBlur = () => {
+    console.log("handleTextBlur called");
+
+    if (editingText) {
+      draw?.finalizeTextEdit(editingText);
+      setEditingText(null);
+    }
+  };
+
   console.log(selectedTool, "selectedTool in canvas.tsx");
-
-  // const handleWheel = (e: React.WheelEvent) => {
-  //   e.preventDefault();
-  //   if (e.ctrlKey) {
-  //     const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-  //     setTransform((prev) => ({
-  //       ...prev,
-  //       scale: prev.scale * zoomFactor,
-  //     }));
-  //   } else {
-  //     setTransform((prev) => ({
-  //       ...prev,
-  //       offsetX: prev.offsetX - e.deltaX,
-  //       offsetY: prev.offsetY - e.deltaY,
-  //     }));
-  //   }
-  // };
-
-  // const handleDoubleClick = (e: React.MouseEvent) => {
-  //   const point = getCanvasPoint(e);
-  //   const clickedShape = shapes.find((shape) =>
-  //     isPointInShape(point.x, point.y, shape, transform)
-  //   );
-
-  //   if (clickedShape?.type === "text") {
-  //     setEditingText({
-  //       id: clickedShape.id,
-  //       x: clickedShape.x,
-  //       y: clickedShape.y,
-  //       content: clickedShape.content,
-  //     });
-  //   }
-  // };
 
   return (
     <>
@@ -81,7 +85,7 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
 
       <div className="absolute top-4 right-4">
         <button
-          className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+          className="text-sm px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
           onClick={() => setShowLeaveConfirmation(true)}
         >
           Leave Room
@@ -112,31 +116,45 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
           </div>
         </div>
       )}
-      {/* {editingText && (
+      {editingText && (
         <div
           className="absolute"
           style={{
-            left: editingText.x * transform.scale + transform.offsetX,
-            top: editingText.y * transform.scale + transform.offsetY,
+            left: `${editingText.x}px`,
+            top: `${editingText.y - 20}px`,
+            zIndex: 1000,
           }}
         >
           <input
             autoFocus
-            value={editingText?.content}
-            onChange={(e) => {
-              setEditingText({ ...editingText, content: e.target.value });
-              updateShape(editingText?.id, { content: e.target.value });
-            }}
-            onBlur={() => setEditingText(null)}
+            className="bg-transparent text-white border border-white px-2 py-1 outline-none"
+            value={editingText.content}
+            onChange={handleTextChange}
+            onBlur={handleTextBlur}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
-                setEditingText(null);
+                handleTextBlur();
               }
             }}
           />
         </div>
-      )} */}
-
+      )}
+      <div className="absolute bottom-5 right-5 text-white bg flex gap-x-4 bg-gray-800 p-2 rounded-lg shadow-lg">
+        <button
+          className=""
+          onClick={() =>
+            draw?.zoomOut((newScale: number) => setScale(newScale))
+          }
+        >
+          <Minus className="w-4 h-4" />
+        </button>
+        <span>{draw?.transform.scale.toFixed(2)}</span>
+        <button
+          onClick={() => draw?.zoomIn((newScale: number) => setScale(newScale))}
+        >
+          <Plus className="w-5 h-4" />
+        </button>
+      </div>
       {/* <SettingsPanel handleShare={handleShare} /> */}
     </>
   );

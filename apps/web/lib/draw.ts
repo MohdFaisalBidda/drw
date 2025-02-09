@@ -15,6 +15,13 @@ export interface Shape {
   details?: any;
 }
 
+export interface EditingText {
+  id: string;
+  x: number;
+  y: number;
+  content: string;
+}
+
 export class Draw {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
@@ -26,15 +33,17 @@ export class Draw {
   private startPoint: { x: number; y: number } | null = null;
   private drawPoints: { x: number, y: number }[] = [];
   private currentShape: Shape | null = null;
-  private transform = { scale: 1, offsetX: 0, offsetY: 0 };
+  public transform = { scale: 1, offsetX: 0, offsetY: 0 };
   private selectedTool: Tool = 'rect';
   private deletedShapeIds: Set<string> = new Set();
   private shapeIdMap: Map<string, string> = new Map();
+  private setEditingText: (text: EditingText | null) => void;
 
-  constructor(canvas: HTMLCanvasElement, roomId: string, socket: WebSocket) {
+  constructor(canvas: HTMLCanvasElement, roomId: string, socket: WebSocket, setEditingText: (text: EditingText | null) => void) {
     this.canvas = canvas;
     this.roomId = roomId;
     this.socket = socket;
+    this.setEditingText = setEditingText;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Cannot get canvas context');
@@ -61,6 +70,7 @@ export class Draw {
     this.canvas.removeEventListener("mouseup", this.handleMouseUp)
     this.canvas.removeEventListener("mousemove", this.handleMouseMove)
     this.canvas.removeEventListener("wheel", this.handleWheel)
+    this.canvas.removeEventListener("dblclick", this.handleDoubleClick)
   }
 
   setTool(tool: Tool) {
@@ -90,6 +100,19 @@ export class Draw {
     }
     this.redraw();
   };
+
+  public zoomIn(callback?: (arg: any) => void) {
+    this.transform.scale *= 1.1;
+    this.redraw();
+    callback?.(this.transform.scale);
+  }
+
+  public zoomOut(callback?: (arg: any) => void) {
+    this.transform.scale /= 1.1;
+    this.redraw();
+    callback?.(this.transform.scale);
+  }
+
 
   private async fetchExistingShapes(): Promise<{ id: Record<string, string>, message: Shape[] }> {
     try {
@@ -122,6 +145,7 @@ export class Draw {
     this.canvas.addEventListener('mousemove', this.handleMouseMove);
     this.canvas.addEventListener('mouseup', this.handleMouseUp);
     this.canvas.addEventListener('wheel', this.handleWheel);
+    this.canvas.addEventListener('dblclick', this.handleDoubleClick);
   }
 
   private setupSocketListeners() {
@@ -138,6 +162,13 @@ export class Draw {
             shape.id = dbShape.id;
           }
 
+          const existingShape = this.shapes.find((s) => s.id === shape.id);
+          if (existingShape) {
+            existingShape.details = shape.details;  // Update text content
+          } else {
+            this.shapes.push(shape);
+          }
+
           if (!this.deletedShapeIds.has(shape.id)) {
             this.shapes.push(shape);
             this.redraw();
@@ -152,6 +183,46 @@ export class Draw {
         console.error('Failed to parse incoming message:', event.data, error);
       }
     });
+  }
+
+  private handleDoubleClick = (e: MouseEvent) => {
+    const point = this.getCanvasPoint(e);
+    const clickedShape = this.shapes.find((shape) =>
+      this.isPointInShape(point.x, point.y, shape, this.transform)
+    );
+    console.log("Clicked Shape:", clickedShape);
+
+
+    if (clickedShape?.type === "text") {
+      console.log("Clicked Text Content:", clickedShape.details?.content);
+
+
+      this.setEditingText({
+        id: clickedShape.id,
+        x: clickedShape.x,
+        y: clickedShape.y,
+        content: clickedShape.details.content,
+      });
+    }
+
+    console.log("Clicked Text Content:", clickedShape?.details?.content);
+  }
+
+  public updateTextContent(id: string, content: string) {
+    const shape = this.shapes.find((shape) => shape.id === id);
+    if (shape && shape.type === "text") {
+      // shape.details.content = content;
+      this.redraw();
+    }
+  }
+
+  public finalizeTextEdit(editingText: EditingText) {
+    const shape = this.shapes.find((shape) => shape.id === editingText.id);
+    if (shape && shape.type === "text") {
+      shape.details.content = editingText.content;
+      this.sendShapeToServer(shape);
+      this.redraw();
+    }
   }
 
   private handleMouseDown = (e: MouseEvent) => {
@@ -216,7 +287,7 @@ export class Draw {
           ...templateShape,
           details: {
             fontSize: 20,
-            content: "Text",
+            content: "",
           }
         }
         break;
@@ -330,6 +401,15 @@ export class Draw {
     if (!this.isDrawing || !this.currentShape) return;
     this.isDrawing = false;
     console.log("ruuned here while deleting", this.currentShape);
+
+    if (this.currentShape.type === "text") {
+      this.setEditingText({
+        id: this.currentShape.id,
+        x: this.currentShape.x,
+        y: this.currentShape.y,
+        content: this.currentShape.details.content,
+      })
+    }
 
     if (this.selectedTool !== "eraser" && this.currentShape) {
       this.sendShapeToServer(this.currentShape);
