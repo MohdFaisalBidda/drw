@@ -113,6 +113,11 @@ export class Draw {
     callback?.(this.transform.scale);
   }
 
+  public addGeneratedShapes(shape: Shape) {
+    this.shapes.push(shape);
+    this.redraw();
+  }
+
 
   private async fetchExistingShapes(): Promise<{ id: Record<string, string>, message: Shape[] }> {
     try {

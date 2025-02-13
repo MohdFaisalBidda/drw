@@ -11,6 +11,7 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.21.0",
     "@repo/ui": "*",
     "@types/axios": "^0.14.4",
     "axios": "^1.7.9",

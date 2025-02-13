@@ -26,10 +26,14 @@ export const Input = ({
   placeholder,
   value,
   onChange,
+  disabled,
+  className,
 }: {
   id: string;
   placeholder: string;
   value: string;
+  disabled?: boolean;
+  className?: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }) => (
   <div>
@@ -43,7 +47,8 @@ export const Input = ({
       id={id}
       placeholder={placeholder}
       value={value}
-      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-200 bg-white/50"
+      disabled={disabled}
+      className={`w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-200 bg-white/50 ${className}`}
       onChange={onChange}
     />
   </div>
@@ -55,7 +60,7 @@ export const Button = ({
   variant = "primary",
   href,
 }: {
-  text: string;
+  text: string | React.ReactNode;
   onClick?: () => void;
   variant?: "primary" | "secondary";
   href?: string;
