@@ -181,29 +181,31 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
 
       {/* Leave Room Confirmation Modal */}
       {showLeaveConfirmation && (
-       <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
-       <div className="bg-zinc-900 border border-white/10 p-6 rounded-lg shadow-xl">
-         <p className="mb-4 text-lg font-semibold text-white">Are you sure you want to leave the room?</p>
-         <div className="flex justify-end gap-3">
-           <button
-             className="px-4 py-2 rounded-lg
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+          <div className="bg-zinc-900 border border-white/10 p-6 rounded-lg shadow-xl">
+            <p className="mb-4 text-lg font-semibold text-white">
+              Are you sure you want to leave the room?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                className="px-4 py-2 rounded-lg
                       bg-white/10 hover:bg-white/20
                       text-white transition-colors"
-             onClick={() => setShowLeaveConfirmation(false)}
-           >
-             Cancel
-           </button>
-           <button
-             className="px-4 py-2 rounded-lg
+                onClick={() => setShowLeaveConfirmation(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 rounded-lg
                       bg-red-500/80 hover:bg-red-500
                       text-white transition-colors"
-             onClick={handleLeaveRoom}
-           >
-             Leave
-           </button>
-         </div>
-       </div>
-     </div>
+                onClick={handleLeaveRoom}
+              >
+                Leave
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       {editingText && (
         <div
