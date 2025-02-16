@@ -8,7 +8,6 @@ import {
   ArrowRight,
   Diamond,
   Eraser,
-  SquareActivity,
 } from "lucide-react";
 import { Tool } from "../../lib/draw";
 
@@ -28,7 +27,6 @@ function Toolbar({
     { type: "arrow", icon: <ArrowRight className="h-5 w-5" /> },
     { type: "diamond", icon: <Diamond className="h-5 w-5" /> },
     { type: "eraser", icon: <Eraser className="h-5 w-5" /> },
-    { type: "select", icon: <SquareActivity className="h-5 w-5" /> },
   ];
 
   return (
