@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { HTTP_URL } from '../config';
 import axios from 'axios';
 
-export type Tool = 'rect' | 'circle' | 'pencil' | 'line' | 'text' | 'arrow' | 'diamond' | 'draw' | 'eraser';
+export type Tool = 'rect' | 'circle' | 'pencil' | 'line' | 'text' | 'arrow' | 'diamond' | 'draw' | 'eraser' | 'select';
 
 export interface Shape {
   id: string;
@@ -22,6 +22,29 @@ export interface EditingText {
   content: string;
 }
 
+interface SelectionBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  shapeId: string;
+}
+
+interface TransformHandle {
+  x: number;
+  y: number;
+  cursor: string;
+  action: "rotate" | "resize" | "move";
+  position?: "top" | "bottom" | "left" | "right" | "topLeft" | "topRight" | "bottomLeft" | "bottomRight"
+}
+
+interface SelectionBorderRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export class Draw {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
@@ -29,15 +52,28 @@ export class Draw {
   private roomId: string;
   private shapes: Shape[] = [];
   private currentTool: Tool = 'rect';
+  //draw variables
   private isDrawing = false;
   private startPoint: { x: number; y: number } | null = null;
   private drawPoints: { x: number, y: number }[] = [];
   private currentShape: Shape | null = null;
   public transform = { scale: 1, offsetX: 0, offsetY: 0 };
+
   private selectedTool: Tool = 'rect';
   private deletedShapeIds: Set<string> = new Set();
   private shapeIdMap: Map<string, string> = new Map();
   private setEditingText: (text: EditingText | null) => void;
+
+  //Selection variables
+  private selectionBox: SelectionBox | null = null;
+  private transformHandles: TransformHandle[] = [];
+  private isTransforming = false;
+  private activeHandle: TransformHandle | null = null;
+  private transformStart: { x: number, y: number } | null = null;
+  private borderRect: SelectionBorderRect | null = null;
+
+  private isCircle = this.shapes.find((s) => s.id === this.selectionBox?.shapeId)?.type === "circle"
+
 
   constructor(canvas: HTMLCanvasElement, roomId: string, socket: WebSocket, setEditingText: (text: EditingText | null) => void) {
     this.canvas = canvas;
@@ -230,11 +266,83 @@ export class Draw {
     }
   }
 
+  private calculateBoundingBox(shape: Shape) {
+    let box = { x: shape.x, y: shape.y, width: shape.details.width, height: shape.details.height }
+
+    switch (shape.type) {
+      case "circle":
+        const diameter = Math.max(shape.details.width, shape.details.height)
+        box = {
+          x: shape.x - (diameter - shape.details.width) / 2,
+          y: shape.y - (diameter - shape.details.height) / 2,
+          width: diameter,
+          height: diameter
+        }
+        break;
+
+      case "diamond":
+        box = {
+          x: shape.x - shape.details.width * 0.05,
+          y: shape.y - shape.details.height * 0.05,
+          width: shape.details.width * 1.1,
+          height: shape.details.height * 1.1
+        }
+        break;
+    }
+    return box;
+  }
+
+  private createTransformHandles() {
+    if (!this.selectionBox) return;
+
+    const boundingBox = this.calculateBoundingBox(this.currentShape!);
+    const { x, y, width, height } = this.selectionBox;
+    const handleSize = 8;
+
+    const borderRect = boundingBox
+
+    this.transformHandles = [
+      // Corner handles
+      { x: x - handleSize, y: y - handleSize, cursor: "nw-resize", action: "resize", position: "topLeft" },
+      { x: x + width, y: y - handleSize, cursor: "ne-resize", action: "resize", position: "topRight" },
+      { x: x - handleSize, y: y + height, cursor: "sw-resize", action: "resize", position: "bottomLeft" },
+      { x: x + width, y: y + height, cursor: "se-resize", action: "resize", position: "bottomRight" },
+      // Edge handles
+      { x: x + width / 2, y: y - handleSize, cursor: "n-resize", action: "resize", position: "top" },
+      { x: x + width, y: y + height / 2, cursor: "e-resize", action: "resize", position: "right" },
+      { x: x + width / 2, y: y + height, cursor: "s-resize", action: "resize", position: "bottom" },
+      { x: x - handleSize, y: y + height / 2, cursor: "w-resize", action: "resize", position: "left" },
+      // Rotation handle
+      { x: x + width / 2, y: y - 30, cursor: "pointer", action: "rotate" },
+      // Move handle (center)
+      { x: x + width / 2, y: y + height / 2, cursor: "move", action: "move" },
+    ]
+  }
+
+  private drawSelectionBox() {
+    const { x, y, width, height } = this.selectionBox!;
+
+    this.ctx.setLineDash([5, 5]);
+    this.ctx.strokeStyle = "blue";
+    this.ctx.strokeRect(x, y, width, height);
+    this.ctx.setLineDash([]);
+
+    this.transformHandles.forEach((handle) => {
+      this.ctx.fillStyle = "white";
+      this.ctx.strokeStyle = "blue";
+      this.ctx.fillRect(handle.x - 4, handle.y - 4, 8, 8)
+      this.ctx.strokeRect(handle.x - 4, handle.y - 4, 8, 8)
+    })
+  }
+
   private handleMouseDown = (e: MouseEvent) => {
     const point = this.getCanvasPoint(e);
     this.startPoint = point;
     this.isDrawing = true;
     this.currentTool = this.selectedTool;
+
+    this.selectionBox = null;
+    this.transformHandles = [];
 
     const templateShape = {
       id: uuidv4(),
@@ -246,78 +354,105 @@ export class Draw {
       y: point.y,
     }
 
+    const clickedHandle = this.transformHandles.find(handle =>
+      point.x >= handle.x - 4 && point.x <= handle.x + 4 &&
+      point.y >= handle.y - 4 && point.y <= handle.y + 4
+    );
 
-    switch (this.currentTool) {
-      case 'rect':
-        this.currentShape = {
-          ...templateShape,
-          details: { width: 0, height: 0 }
-        };
-        break;
-
-      case 'circle':
-        this.currentShape = {
-          ...templateShape,
-          details: { radius: 0 }
-        }
-        break;
-
-      case 'pencil':
-      case "line":
-        this.currentShape = {
-          ...templateShape,
-          details: {
-            x1: point.x,
-            y1: point.y,
-            x2: point.x,
-            y2: point.y,
-          }
-        }
-        break;
-
-      case "arrow":
-        this.currentShape = {
-          ...templateShape,
-          details: {
-            x1: point.x,
-            y1: point.y,
-            x2: point.x,
-            y2: point.y,
-          }
-        }
-        break;
-
-      case "text":
-        this.currentShape = {
-          ...templateShape,
-          details: {
-            fontSize: 20,
-            content: "",
-          }
-        }
-        break;
-
-      case 'diamond':
-        this.currentShape = {
-          ...templateShape,
-          details: { width: 0, height: 0 }
-        }
-        break;
-
-      case 'draw':
-        this.drawPoints = [point];
-        this.currentShape = {
-          ...templateShape,
-          details: { points: [...this.drawPoints] }
-        }
-        break;
-
-      default:
-        this.currentShape = templateShape;
-        break;
+    if (clickedHandle) {
+      this.isTransforming = true;
+      this.activeHandle = clickedHandle;
+      this.transformStart = point;
     }
 
-    this.shapes.push(this.currentShape);
+    const clickedShape = this.shapes.find((shape) => this.isPointInShape(point.x, point.y, shape, this.transform))
+
+    if (clickedShape) {
+      this.selectionBox = {
+        x: clickedShape.x,
+        y: clickedShape.y,
+        width: clickedShape.details.width || clickedShape.details.radius * 2,
+        height: clickedShape.details.height || clickedShape.details.radius * 2,
+        shapeId: clickedShape.id
+      }
+      this.createTransformHandles()
+      this.redraw()
+      return
+    }
+
+    if (this.selectedTool !== "select") {
+      switch (this.currentTool) {
+        case 'rect':
+          this.currentShape = {
+            ...templateShape,
+            details: { width: 0, height: 0 }
+          };
+          break;
+
+        case 'circle':
+          this.currentShape = {
+            ...templateShape,
+            details: { radius: 0 }
+          }
+          break;
+
+        case 'pencil':
+        case "line":
+          this.currentShape = {
+            ...templateShape,
+            details: {
+              x1: point.x,
+              y1: point.y,
+              x2: point.x,
+              y2: point.y,
+            }
+          }
+          break;
+
+        case "arrow":
+          this.currentShape = {
+            ...templateShape,
+            details: {
+              x1: point.x,
+              y1: point.y,
+              x2: point.x,
+              y2: point.y,
+            }
+          }
+          break;
+
+        case "text":
+          this.currentShape = {
+            ...templateShape,
+            details: {
+              fontSize: 20,
+              content: "",
+            }
+          }
+          break;
+
+        case 'diamond':
+          this.currentShape = {
+            ...templateShape,
+            details: { width: 0, height: 0 }
+          }
+          break;
+
+        case 'draw':
+          this.drawPoints = [point];
+          this.currentShape = {
+            ...templateShape,
+            details: { points: [...this.drawPoints] }
+          }
+          break;
+
+        default:
+          this.currentShape = templateShape;
+          break;
+      }
+
+      this.shapes.push(this.currentShape);
+    }
   };
 
   private isPointNear(x1: number, y1: number, x2: number, y2: number, threshold: number): boolean {
@@ -335,12 +470,109 @@ export class Draw {
   }
 
   private handleMouseMove = (e: MouseEvent) => {
+    const point = this.getCanvasPoint(e);
+
+    const hoveredShape = this.shapes.find((shape) =>
+      this.isPointInShape(point.x, point.y, shape, this.transform)
+    );
+
+    if (hoveredShape) {
+      this.canvas.style.cursor = "crosshair";
+    } else {
+      this.canvas.style.cursor = "default";
+      this.transformHandles = []
+    }
+
     if (!this.isDrawing || !this.currentShape || !this.startPoint) return;
     const currentPoint = this.getCanvasPoint(e);
     const dx = currentPoint.x - this.startPoint.x;
     const dy = currentPoint.y - this.startPoint.y;
 
     console.log("currentShape.type in handleMouseMove");
+
+
+    if (this.isTransforming && this.activeHandle && this.selectionBox && this.transformStart) {
+      // const dx = currentPoint.x - this.startPoint.x;
+      // const dy = currentPoint.y - this.startPoint.y;
+      switch (this.activeHandle.action) {
+        case "resize":
+          switch (this.activeHandle.position) {
+            case "topLeft":
+              this.selectionBox.x += dx;
+              this.selectionBox.y += dy;
+              this.selectionBox.width -= dx;
+              this.selectionBox.height -= dy;
+              if (this.isCircle) {
+                this.selectionBox.width = this.selectionBox.height = Math.max(this.selectionBox.width, this.selectionBox.height)
+              }
+              break;
+
+            case "topRight":
+              this.selectionBox.y += dy;
+              this.selectionBox.width += dx;
+              this.selectionBox.height -= dy;
+              break;
+
+            case "bottomLeft":
+              this.selectionBox.x += dx;
+              this.selectionBox.width -= dx;
+              this.selectionBox.height += dy;
+              break;
+
+            case "bottomRight":
+              this.selectionBox.width += dx;
+              this.selectionBox.height += dy;
+
+            case "top":
+              this.selectionBox.y += dy;
+              this.selectionBox.height -= dy;
+              break;
+
+            case "right":
+              this.selectionBox.width += dx;
+              break;
+
+            case "bottom":
+              this.selectionBox.height += dy;
+              break;
+
+            case "left":
+              this.selectionBox.x += dx;
+              this.selectionBox.width -= dx;
+              break;
+          }
+          break;
+
+        case "rotate": {
+          const shape = this.shapes.find((s) => s.id === this.selectionBox?.shapeId)
+          if (shape && this.selectionBox) {
+            const centerX = this.selectionBox.x + this.selectionBox.width / 2;
+            const centerY = this.selectionBox.y + this.selectionBox.height / 2;
+            const angle = Math.atan2(currentPoint.y - centerY, currentPoint.x - centerX);
+            // shape?.details.rotation = angle * (100 / Math.PI);
+          }
+          break;
+        }
+
+        case "move":
+          const displacedx = currentPoint.x - this.transformStart.x;
+          const displacedy = currentPoint.y - this.transformStart.y
+          const selectedShape = this.shapes.find((s) => s.id === this.selectionBox?.shapeId)
+          if (selectedShape) {
+            selectedShape.x += displacedx;
+            selectedShape.y += displacedy;
+            this.selectionBox.x += displacedx;
+            this.selectionBox.y += displacedy;
+          }
+          this.transformStart = currentPoint;
+          this.createTransformHandles()
+          break;
+      }
+
+      this.transformStart = currentPoint;
+      this.createTransformHandles()
+      this.redraw()
+    }
 
     switch (this.currentShape.type) {
       case "rect":
@@ -403,9 +635,36 @@ export class Draw {
   };
 
   private handleMouseUp = () => {
+    this.isTransforming = false;
+    this.activeHandle = null;
+
+    if (this.selectionBox) {
+      const shape = this.shapes.find((s) => s.id === this.selectionBox?.shapeId)
+      if (shape) {
+        shape.details.width = this.selectionBox.width;
+        shape.details.height = this.selectionBox.height;
+      }
+    }
+
+
     if (!this.isDrawing || !this.currentShape) return;
     this.isDrawing = false;
     console.log("ruuned here while deleting", this.currentShape);
+
+    if (this.currentShape) {
+      const width = this.currentShape.details.width || this.currentShape.details.radius * 2 || 0;
+      const height = this.currentShape.details.height || this.currentShape.details.radius * 2 || 0;
+
+      this.selectionBox = {
+        x: this.currentShape.x,
+        y: this.currentShape.y,
+        width: width,
+        height: height,
+        shapeId: this.currentShape.id
+      }
+      this.createTransformHandles()
+    }
+
 
     if (this.currentShape.type === "text") {
       this.setEditingText({
@@ -416,12 +675,14 @@ export class Draw {
       })
     }
 
+
     if (this.selectedTool !== "eraser" && this.currentShape) {
       this.sendShapeToServer(this.currentShape);
     }
 
     this.deletedShapeIds.clear()
     this.currentShape = null;
+    this.redraw();
   };
 
   private sendShapeToServer(shape: Shape) {
@@ -448,6 +709,11 @@ export class Draw {
     this.ctx.scale(this.transform.scale, this.transform.scale);
 
     this.shapes.forEach((shape) => this.drawShape(shape));
+
+    if (this.selectionBox) {
+      this.drawSelectionBox();
+    }
+
     this.ctx.restore();
   }
 
