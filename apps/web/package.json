@@ -7,6 +7,7 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
+    "db:generate":"npx prisma generate && npx prisma migrate dev",
     "lint": "next lint --max-warnings 0",
     "check-types": "tsc --noEmit"
   },

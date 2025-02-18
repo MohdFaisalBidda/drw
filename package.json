@@ -5,7 +5,11 @@
     "build": "turbo build",
     "dev": "turbo dev",
     "lint": "turbo lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\""
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "db:generate": "cd packages/db && npx prisma generate && cd ../..",
+    "start:web": "cd apps/web && npm run dev",
+    "start:backend": "cd apps/backend && npm run dev",
+    "start:websocket": "cd apps/websocket && npm run dev"
   },
   "exports":{
     "backend-common":"./packages/backend-common",

@@ -1,0 +1,18 @@
+FROM node:16-alpine
+
+WORKDIR /usr/src/app
+
+COPY ./packages ./packages
+
+COPY ./package.json ./package.json
+COPY ./turbo.json ./turbo.json
+
+COPY ./apps/ws-backend ./apps/ws-backend
+
+RUN npm install
+
+RUN npm run db:generate
+
+EXPOSE 8081
+
+CMD [ "npm", "start:websocket" ]
