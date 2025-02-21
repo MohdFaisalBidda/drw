@@ -12,7 +12,7 @@ export interface Shape {
   strokeColor: string;
   strokeWidth: number;
   fillColor: string;
-  details?: any;
+  details: any;
 }
 
 export interface EditingText {
@@ -66,6 +66,7 @@ export class Draw {
 
   //Selection variables
   private selectionBox: SelectionBox | null = null;
+  private selectedShape: Shape | null = null;
   private transformHandles: TransformHandle[] = [];
   private isTransforming = false;
   private activeHandle: TransformHandle | null = null;
@@ -266,43 +267,68 @@ export class Draw {
     }
   }
 
-  private calculateBoundingBox(shape: Shape) {
-    let box = { x: shape.x, y: shape.y, width: shape.details.width, height: shape.details.height }
+  private calculateBoundingBox(shape: Shape): SelectionBox {
+    let width = 0;
+    let height = 0;
 
     switch (shape.type) {
+      case "rect":
+      case "diamond":
+        width = shape.details.width || 0;
+        height = shape.details.height || 0;
+        break;
+
       case "circle":
-        const diameter = Math.max(shape.details.width, shape.details.height)
-        box = {
-          x: shape.x - (diameter - shape.details.width) / 2,
-          y: shape.y - (diameter - shape.details.height) / 2,
-          width: diameter,
-          height: diameter
+        width = shape.details.radius * 2 || 0;
+        height = shape.details.radius * 2 || 0;
+        break;
+
+      case "line":
+      case "arrow":
+        width = Math.abs(shape.details.x2 - shape.details.x1);
+        height = Math.abs(shape.details.y2 - shape.details.y1);
+        break;
+
+      case "text":
+        width = 100; // Approximate width for text
+        height = shape.details.fontSize || 20;
+        break;
+
+      case "draw":
+        if (shape.details.points && shape.details.points.length > 0) {
+          const xs = shape.details.points.map((p: { x: number }) => p.x);
+          const ys = shape.details.points.map((p: { y: number }) => p.y);
+          width = Math.max(...xs) - Math.min(...xs);
+          height = Math.max(...ys) - Math.min(...ys);
         }
         break;
 
-      case "diamond":
-        box = {
-          x: shape.x - shape.details.width * 0.05,
-          y: shape.y - shape.details.height * 0.05,
-          width: shape.details.width * 1.1,
-          height: shape.details.height * 1.1
-        }
+      default:
+        width = 0;
+        height = 0;
         break;
     }
-    return box;
+
+    return {
+      x: shape.x,
+      y: shape.y,
+      width,
+      height,
+      shapeId: shape.id,
+    };
   }
 
   private createTransformHandles() {
     if (!this.selectionBox) return;
 
-    const boundingBox = this.calculateBoundingBox(this.currentShape!);
+    // const boundingBox = this.calculateBoundingBox(this.currentShape!);
     const { x, y, width, height } = this.selectionBox;
     const handleSize = 8;
 
-    const borderRect = boundingBox
+    // const borderRect = boundingBox
 
     this.transformHandles = [
-      // Corner handles
+      // // Corner handles
       { x: x - handleSize, y: y - handleSize, cursor: "nw-resize", action: "resize", position: "topLeft" },
       { x: x + width, y: y - handleSize, cursor: "ne-resize", action: "resize", position: "topRight" },
       { x: x - handleSize, y: y + height, cursor: "sw-resize", action: "resize", position: "bottomLeft" },
@@ -320,18 +346,31 @@ export class Draw {
   }
 
   private drawSelectionBox() {
+    if (!this.selectionBox) return;
+
     const { x, y, width, height } = this.selectionBox!;
 
     this.ctx.setLineDash([5, 5]);
     this.ctx.strokeStyle = "blue";
-    this.ctx.strokeRect(x, y, width, height);
+
+    // Draw selection box accounting for transform
+    this.ctx.strokeRect(
+      x * this.transform.scale + this.transform.offsetX,
+      y * this.transform.scale + this.transform.offsetY,
+      width * this.transform.scale,
+      height * this.transform.scale
+    );
+
     this.ctx.setLineDash([]);
 
     this.transformHandles.forEach((handle) => {
+      console.log("Drawing handle at:", handle.x, handle.y);
       this.ctx.fillStyle = "white";
       this.ctx.strokeStyle = "blue";
-      this.ctx.fillRect(handle.x - 4, handle.y - 4, 8, 8)
-      this.ctx.strokeRect(handle.x - 4, handle.y - 4, 8, 8)
+      const handleX = (handle.x * this.transform.scale) + this.transform.offsetX;
+      const handleY = (handle.y * this.transform.scale) + this.transform.offsetY;
+      this.ctx.fillRect(handleX - 4, handleY - 4, 8, 8)
+      this.ctx.strokeRect(handleX - 4, handleY - 4, 8, 8)
     })
   }
 
@@ -344,6 +383,37 @@ export class Draw {
     this.selectionBox = null;
     this.transformHandles = [];
 
+    if (this.transformHandles.length > 0) {
+      // Check transform handles first, before clearing selection
+      const clickedHandle = this.transformHandles.find(handle => {
+        // Account for transform scale and offset in handle position check
+        const handleX = (handle.x * this.transform.scale) + this.transform.offsetX;
+        const handleY = (handle.y * this.transform.scale) + this.transform.offsetY;
+
+        // Increase hit area for handles
+        const handleHitArea = 8; // Pixels around handle that will register as a click
+
+        return (
+          point.x >= handleX - handleHitArea &&
+          point.x <= handleX + handleHitArea &&
+          point.y >= handleY - handleHitArea &&
+          point.y <= handleY + handleHitArea
+        );
+      });
+
+      if (clickedHandle) {
+        console.log("Handle clicked:", clickedHandle);
+        this.isTransforming = true;
+        this.activeHandle = clickedHandle;
+        this.transformStart = point;
+        e.stopPropagation()
+        return; // Exit early if handle is clicked
+      }
+    }
+
+    // // Only clear selection if no handle was clicked
+
+
     const templateShape = {
       id: uuidv4(),
       type: this.currentTool,
@@ -352,107 +422,124 @@ export class Draw {
       fillColor: 'transparent',
       x: point.x,
       y: point.y,
+      details: {},
     }
 
-    const clickedHandle = this.transformHandles.find(handle =>
-      point.x >= handle.x - 4 && point.x <= handle.x + 4 &&
-      point.y >= handle.y - 4 && point.y <= handle.y + 4
-    );
+    if (this.currentTool === "select") {
+      // // Check if a transform handle is clicked
+      // const clickedHandle = this.transformHandles.find(handle =>
+      //   point.x >= handle.x - 4 && point.x <= handle.x + 4 &&
+      //   point.y >= handle.y - 4 && point.y <= handle.y + 4
+      // );
 
-    if (clickedHandle) {
-      this.isTransforming = true;
-      this.activeHandle = clickedHandle;
-      this.transformStart = point;
-    }
+      // if (clickedHandle) {
+      //   console.log("Clicked handle:", clickedHandle);
+      //   this.isTransforming = true;
+      //   this.activeHandle = clickedHandle;
+      //   this.transformStart = point;
+      //   return; // Exit early if a handle is clicked
+      // }
 
-    const clickedShape = this.shapes.find((shape) => this.isPointInShape(point.x, point.y, shape, this.transform))
+      const clickedShape = this.shapes.find((shape) =>
+        this.isPointInShape(point.x, point.y, shape, this.transform)
+      );
 
-    if (clickedShape) {
-      this.selectionBox = {
-        x: clickedShape.x,
-        y: clickedShape.y,
-        width: clickedShape.details.width || clickedShape.details.radius * 2,
-        height: clickedShape.details.height || clickedShape.details.radius * 2,
-        shapeId: clickedShape.id
+      if (clickedShape) {
+        console.log("Clicked shape:", clickedShape);
+        this.selectedShape = clickedShape;
+        this.selectionBox = this.calculateBoundingBox(clickedShape);
+        this.createTransformHandles()
+        this.redraw()
       }
-      this.createTransformHandles()
-      this.redraw()
       return
     }
 
-    if (this.selectedTool !== "select") {
-      switch (this.currentTool) {
-        case 'rect':
-          this.currentShape = {
-            ...templateShape,
-            details: { width: 0, height: 0 }
-          };
-          break;
+    // const clickedShape = this.shapes.find((shape) => this.isPointInShape(point.x, point.y, shape, this.transform))
 
-        case 'circle':
-          this.currentShape = {
-            ...templateShape,
-            details: { radius: 0 }
+    // if (clickedShape) {
+    //   this.selectionBox = {
+    //     x: clickedShape.x,
+    //     y: clickedShape.y,
+    //     width: clickedShape.details.width || clickedShape.details.radius * 2,
+    //     height: clickedShape.details.height || clickedShape.details.radius * 2,
+    //     shapeId: clickedShape.id
+    //   }
+    //   this.createTransformHandles()
+    //   this.redraw()
+    // }
+
+    switch (this.currentTool) {
+      case 'rect':
+        this.currentShape = {
+          ...templateShape,
+          details: { width: 0, height: 0 }
+        };
+        break;
+
+      case 'circle':
+        this.currentShape = {
+          ...templateShape,
+          details: { radius: 0 }
+        }
+        break;
+
+      case 'pencil':
+      case "line":
+        this.currentShape = {
+          ...templateShape,
+          details: {
+            x1: point.x,
+            y1: point.y,
+            x2: point.x,
+            y2: point.y,
           }
-          break;
+        }
+        break;
 
-        case 'pencil':
-        case "line":
-          this.currentShape = {
-            ...templateShape,
-            details: {
-              x1: point.x,
-              y1: point.y,
-              x2: point.x,
-              y2: point.y,
-            }
+      case "arrow":
+        this.currentShape = {
+          ...templateShape,
+          details: {
+            x1: point.x,
+            y1: point.y,
+            x2: point.x,
+            y2: point.y,
           }
-          break;
+        }
+        break;
 
-        case "arrow":
-          this.currentShape = {
-            ...templateShape,
-            details: {
-              x1: point.x,
-              y1: point.y,
-              x2: point.x,
-              y2: point.y,
-            }
+      case "text":
+        this.currentShape = {
+          ...templateShape,
+          details: {
+            fontSize: 20,
+            content: "",
           }
-          break;
+        }
+        break;
 
-        case "text":
-          this.currentShape = {
-            ...templateShape,
-            details: {
-              fontSize: 20,
-              content: "",
-            }
-          }
-          break;
+      case 'diamond':
+        this.currentShape = {
+          ...templateShape,
+          details: { width: 0, height: 0 }
+        }
+        break;
 
-        case 'diamond':
-          this.currentShape = {
-            ...templateShape,
-            details: { width: 0, height: 0 }
-          }
-          break;
+      case 'draw':
+        this.drawPoints = [point];
+        this.currentShape = {
+          ...templateShape,
+          details: { points: [...this.drawPoints] }
+        }
+        break;
 
-        case 'draw':
-          this.drawPoints = [point];
-          this.currentShape = {
-            ...templateShape,
-            details: { points: [...this.drawPoints] }
-          }
-          break;
-
-        default:
-          this.currentShape = templateShape;
-          break;
-      }
-
-      this.shapes.push(this.currentShape);
+      default:
+        this.currentShape = templateShape;
+        break;
     }
+
+    this.shapes.push(this.currentShape);
+    this.redraw()
   };
 
   private isPointNear(x1: number, y1: number, x2: number, y2: number, threshold: number): boolean {
@@ -471,6 +558,10 @@ export class Draw {
 
   private handleMouseMove = (e: MouseEvent) => {
     const point = this.getCanvasPoint(e);
+    // if (!this.isTransforming || !this.activeHandle || !this.transformStart || !this.selectionBox) {
+    //   return;
+    // }
+    if (!this.isDrawing || !this.currentShape || !this.startPoint) return;
 
     const hoveredShape = this.shapes.find((shape) =>
       this.isPointInShape(point.x, point.y, shape, this.transform)
@@ -483,95 +574,74 @@ export class Draw {
       this.transformHandles = []
     }
 
-    if (!this.isDrawing || !this.currentShape || !this.startPoint) return;
-    const currentPoint = this.getCanvasPoint(e);
-    const dx = currentPoint.x - this.startPoint.x;
-    const dy = currentPoint.y - this.startPoint.y;
+    const dx = point.x - this.startPoint.x;
+    const dy = point.y - this.startPoint.y;
 
     console.log("currentShape.type in handleMouseMove");
 
 
     if (this.isTransforming && this.activeHandle && this.selectionBox && this.transformStart) {
-      // const dx = currentPoint.x - this.startPoint.x;
-      // const dy = currentPoint.y - this.startPoint.y;
-      switch (this.activeHandle.action) {
-        case "resize":
-          switch (this.activeHandle.position) {
-            case "topLeft":
-              this.selectionBox.x += dx;
-              this.selectionBox.y += dy;
-              this.selectionBox.width -= dx;
-              this.selectionBox.height -= dy;
-              if (this.isCircle) {
-                this.selectionBox.width = this.selectionBox.height = Math.max(this.selectionBox.width, this.selectionBox.height)
-              }
-              break;
+      const shape = this.shapes.find(s => s.id === this.selectionBox?.shapeId);
+      if (!shape) return;
 
-            case "topRight":
-              this.selectionBox.y += dy;
-              this.selectionBox.width += dx;
-              this.selectionBox.height -= dy;
-              break;
 
-            case "bottomLeft":
-              this.selectionBox.x += dx;
-              this.selectionBox.width -= dx;
-              this.selectionBox.height += dy;
-              break;
+      console.log("Transform action:", {
+        action: this.activeHandle.action,
+        dx,
+        dy,
+        currentPos: { x: shape.x, y: shape.y },
+      });
 
-            case "bottomRight":
-              this.selectionBox.width += dx;
-              this.selectionBox.height += dy;
+      if (this.activeHandle.action === "move") {
+        // Update shape position
+        shape.x += dx;
+        shape.y += dy;
 
-            case "top":
-              this.selectionBox.y += dy;
-              this.selectionBox.height -= dy;
-              break;
+        // For specific shape types, update additional coordinates
+        switch (shape.type) {
+          case "line":
+          case "arrow":
+            shape.details.x1 += dx;
+            shape.details.y1 += dy;
+            shape.details.x2 += dx;
+            shape.details.y2 += dy;
+            break;
 
-            case "right":
-              this.selectionBox.width += dx;
-              break;
-
-            case "bottom":
-              this.selectionBox.height += dy;
-              break;
-
-            case "left":
-              this.selectionBox.x += dx;
-              this.selectionBox.width -= dx;
-              break;
-          }
-          break;
-
-        case "rotate": {
-          const shape = this.shapes.find((s) => s.id === this.selectionBox?.shapeId)
-          if (shape && this.selectionBox) {
-            const centerX = this.selectionBox.x + this.selectionBox.width / 2;
-            const centerY = this.selectionBox.y + this.selectionBox.height / 2;
-            const angle = Math.atan2(currentPoint.y - centerY, currentPoint.x - centerX);
-            // shape?.details.rotation = angle * (100 / Math.PI);
-          }
-          break;
+          case "draw":
+            if (shape.details.points) {
+              shape.details.points = shape.details.points.map((point: { x: number; y: number }) => ({
+                x: point.x + dx,
+                y: point.y + dy
+              }));
+            }
+            break;
         }
 
-        case "move":
-          const displacedx = currentPoint.x - this.transformStart.x;
-          const displacedy = currentPoint.y - this.transformStart.y
-          const selectedShape = this.shapes.find((s) => s.id === this.selectionBox?.shapeId)
-          if (selectedShape) {
-            selectedShape.x += displacedx;
-            selectedShape.y += displacedy;
-            this.selectionBox.x += displacedx;
-            this.selectionBox.y += displacedy;
-          }
-          this.transformStart = currentPoint;
-          this.createTransformHandles()
-          break;
+        // Update selection box position
+        this.selectionBox.x += dx;
+        this.selectionBox.y += dy;
+
+        // Update transform handles
+        this.transformHandles = this.transformHandles.map(handle => ({
+          ...handle,
+          x: handle.x + dx,
+          y: handle.y + dy
+        }));
+
+        console.log("After move:", {
+          shapePos: { x: shape.x, y: shape.y },
+          selectionBox: { x: this.selectionBox.x, y: this.selectionBox.y }
+        });
+
+        // Redraw and send update
+        this.redraw();
+        // this.sendShapeToServer(shape);
       }
 
-      this.transformStart = currentPoint;
-      this.createTransformHandles()
-      this.redraw()
+      // Update transform start point for next movement
+      this.transformStart = point;
+      return;
+
     }
 
     switch (this.currentShape.type) {
@@ -588,7 +658,7 @@ export class Draw {
         break;
 
       case "draw":
-        this.drawPoints.push(currentPoint)
+        this.drawPoints.push(point)
         if (this.currentShape.details) {
           this.currentShape.details.points = [...this.drawPoints];
         }
@@ -599,11 +669,11 @@ export class Draw {
           let shouldDelete = false;
           if (shape.type === "draw") {
             shouldDelete = shape.details.points.some((point: { x: number; y: number }) =>
-              this.isPointNear(point.x, point.y, currentPoint.x, currentPoint.y, 10) // Increase 10 for bigger eraser size
+              this.isPointNear(point.x, point.y, point.x, point.y, 10) // Increase 10 for bigger eraser size
             );
           } else {
             // For all other shapes, use regular check
-            shouldDelete = this.isPointInShape(currentPoint.x, currentPoint.y, shape, this.transform);
+            shouldDelete = this.isPointInShape(point.x, point.y, shape, this.transform);
           }
 
           if (shouldDelete) {
@@ -623,8 +693,8 @@ export class Draw {
 
       case "line":
       case "arrow":
-        this.currentShape.details.x2 = currentPoint.x;
-        this.currentShape.details.y2 = currentPoint.y;
+        this.currentShape.details.x2 = point.x;
+        this.currentShape.details.y2 = point.y;
         break;
 
       default:
@@ -637,10 +707,12 @@ export class Draw {
   private handleMouseUp = () => {
     this.isTransforming = false;
     this.activeHandle = null;
+    this.transformStart = null;
 
     if (this.selectionBox) {
       const shape = this.shapes.find((s) => s.id === this.selectionBox?.shapeId)
       if (shape) {
+        shape.details = shape.details || {};
         shape.details.width = this.selectionBox.width;
         shape.details.height = this.selectionBox.height;
       }
@@ -652,6 +724,7 @@ export class Draw {
     console.log("ruuned here while deleting", this.currentShape);
 
     if (this.currentShape) {
+      this.currentShape.details = this.currentShape.details || {};
       const width = this.currentShape.details.width || this.currentShape.details.radius * 2 || 0;
       const height = this.currentShape.details.height || this.currentShape.details.radius * 2 || 0;
 
@@ -662,7 +735,7 @@ export class Draw {
         height: height,
         shapeId: this.currentShape.id
       }
-      this.createTransformHandles()
+      // this.createTransformHandles()
     }
 
 
@@ -703,103 +776,121 @@ export class Draw {
   }
 
   private redraw() {
+    console.log("Redrawing canvas"); // Debug log
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.ctx.save();
     this.ctx.translate(this.transform.offsetX, this.transform.offsetY);
     this.ctx.scale(this.transform.scale, this.transform.scale);
-
-    this.shapes.forEach((shape) => this.drawShape(shape));
-
+  
+    // Draw all shapes
+    this.shapes.forEach((shape) => {
+      console.log("Drawing shape:", shape); // Debug log
+      this.drawShape(shape);
+    });
+  
+    // Draw the selection box and transform handles
     if (this.selectionBox) {
+      console.log("Drawing selection box:", this.selectionBox); // Debug log
       this.drawSelectionBox();
     }
-
+  
     this.ctx.restore();
   }
 
   private drawShape(shape: Shape) {
+    console.log("Drawing shape:", shape); // Debug log
+  
+    this.ctx.save();
+    this.ctx.translate(shape.x, shape.y);
+    if (shape.details.rotation) {
+      this.ctx.rotate((shape.details.rotation * Math.PI) / 180);
+    }
+  
     this.ctx.strokeStyle = shape.strokeColor;
     this.ctx.lineWidth = shape.strokeWidth;
     this.ctx.fillStyle = shape.fillColor;
-
-    console.log(shape, "shape.type in drawShape");
-
+  
     switch (shape.type) {
       case "rect":
-        this.ctx.strokeRect(
-          shape.x,
-          shape.y,
-          shape.details.width,
-          shape.details.height
-        );
+        this.ctx.strokeRect(0, 0, shape.details.width, shape.details.height);
         break;
-
+  
       case "circle":
         this.ctx.beginPath();
-        this.ctx.arc(shape.x, shape.y, shape.details.radius, 0, Math.PI * 2);
+        this.ctx.arc(0, 0, shape.details.radius, 0, Math.PI * 2);
         this.ctx.stroke();
         break;
-
+  
       case "line":
-        if (!shape.details || shape.details.x1 === undefined) {
-          console.warn("Line shape is missing details:", shape);
-          return;
-        }
-
-        console.log(shape, "shape of line");
-
+      case "arrow":
         this.ctx.beginPath();
-        console.log(shape, "shape here");
-
-        this.ctx.moveTo(shape.details.x1, shape.details.y1);
-        this.ctx.lineTo(shape.details.x2, shape.details.y2);
+        this.ctx.moveTo(shape.details.x1 - shape.x, shape.details.y1 - shape.y);
+        this.ctx.lineTo(shape.details.x2 - shape.x, shape.details.y2 - shape.y);
         this.ctx.stroke();
+  
+        if (shape.type === "arrow") {
+          const angle = Math.atan2(
+            shape.details.y2 - shape.details.y1,
+            shape.details.x2 - shape.details.x1
+          );
+          const arrowLength = 15;
+  
+          this.ctx.beginPath();
+          this.ctx.moveTo(
+            shape.details.x2 - shape.x,
+            shape.details.y2 - shape.y
+          );
+          this.ctx.lineTo(
+            shape.details.x2 - shape.x - arrowLength * Math.cos(angle - Math.PI / 6),
+            shape.details.y2 - shape.y - arrowLength * Math.sin(angle - Math.PI / 6)
+          );
+          this.ctx.moveTo(
+            shape.details.x2 - shape.x,
+            shape.details.y2 - shape.y
+          );
+          this.ctx.lineTo(
+            shape.details.x2 - shape.x - arrowLength * Math.cos(angle + Math.PI / 6),
+            shape.details.y2 - shape.y - arrowLength * Math.sin(angle + Math.PI / 6)
+          );
+          this.ctx.stroke();
+        }
         break;
-
-      case "text":
-        this.ctx.font = `${shape.details.fontSize}px sans-serif`;
-        this.ctx.fillStyle = shape.strokeColor;
-        this.ctx.fillText(shape.details.content, shape.x, shape.y);
-        break;
-
+  
       case "draw":
         if (shape.details.points && shape.details.points.length > 0) {
           this.ctx.beginPath();
-          this.ctx.moveTo(shape.details.points[0].x, shape.details.points[0].y);
-          shape.details.points.forEach((point: { x: number, y: number }) => {
-            this.ctx.lineTo(point.x, point.y);
+          const firstPoint = shape.details.points[0];
+          this.ctx.moveTo(firstPoint.x - shape.x, firstPoint.y - shape.y);
+          shape.details.points.forEach((point: { x: number; y: number }) => {
+            this.ctx.lineTo(point.x - shape.x, point.y - shape.y);
           });
           this.ctx.stroke();
         }
         break;
-
-      case "arrow":
-        const angle = Math.atan2(shape.details.y2 - shape.details.y1, shape.details.x2 - shape.details.x1);
-        const arrowLength = 15;
-
-        this.ctx.beginPath();
-        this.ctx.moveTo(shape.details.x1, shape.details.y1);
-        this.ctx.lineTo(shape.details.x2, shape.details.y2);
-        this.ctx.lineTo(shape.details.x2 - arrowLength * Math.cos(angle - Math.PI / 6), shape.details.y2 - arrowLength * Math.sin(angle - Math.PI / 6));
-        this.ctx.moveTo(shape.details.x2, shape.details.y2);
-        this.ctx.lineTo(shape.details.x2 - arrowLength * Math.cos(angle + Math.PI / 6), shape.details.y2 - arrowLength * Math.sin(angle + Math.PI / 6));
-        this.ctx.stroke();
+  
+      case "text":
+        this.ctx.font = `${shape.details.fontSize}px sans-serif`;
+        this.ctx.fillStyle = shape.strokeColor;
+        this.ctx.fillText(shape.details.content, 0, 0);
         break;
-
+  
       case "diamond":
+        const halfWidth = shape.details.width / 2;
+        const halfHeight = shape.details.height / 2;
         this.ctx.beginPath();
-        this.ctx.moveTo(shape.x, shape.y - shape.details.height / 2);
-        this.ctx.lineTo(shape.x + shape.details.width / 2, shape.y);
-        this.ctx.lineTo(shape.x, shape.y + shape.details.height / 2);
-        this.ctx.lineTo(shape.x - shape.details.width / 2, shape.y);
+        this.ctx.moveTo(0, -halfHeight);
+        this.ctx.lineTo(halfWidth, 0);
+        this.ctx.lineTo(0, halfHeight);
+        this.ctx.lineTo(-halfWidth, 0);
         this.ctx.closePath();
-        this.ctx.fill();
         this.ctx.stroke();
         break;
-
+  
       default:
         break;
     }
+  
+    this.ctx.restore();
   }
 
   private pointToLineDistance(
