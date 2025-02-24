@@ -8,7 +8,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "db:generate": "cd packages/db && npx prisma generate && cd ../..",
     "start:web": "cd apps/web && npm run dev",
-    "start:backend": "cd apps/backend && npm run dev",
+    "start:backend": "cd apps/http-backend && npm run dev",
     "start:websocket": "cd apps/ws-backend && npm run dev"
   },
   "exports":{

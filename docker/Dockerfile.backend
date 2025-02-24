@@ -14,4 +14,4 @@ RUN npm run db:generate
 
 EXPOSE 8000
 
-CMD [ "npm", "start:backend" ]
+CMD [ "npm", "run" ,"start:backend" ]

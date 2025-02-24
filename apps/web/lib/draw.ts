@@ -267,7 +267,8 @@ export class Draw {
     }
   }
 
-  private calculateBoundingBox(shape: Shape): SelectionBox {
+  private calculateBoundingBox(shape: Shape): SelectionBox | null {
+    const { x, y, details, type } = shape;
     let width = 0;
     let height = 0;
 
@@ -285,8 +286,8 @@ export class Draw {
 
       case "line":
       case "arrow":
-        width = Math.abs(shape.details.x2 - shape.details.x1);
-        height = Math.abs(shape.details.y2 - shape.details.y1);
+        width = Math.abs(shape.details.x2 - x);
+        height = Math.abs(shape.details.y2 - y);
         break;
 
       case "text":
@@ -304,9 +305,7 @@ export class Draw {
         break;
 
       default:
-        width = 0;
-        height = 0;
-        break;
+        return null
     }
 
     return {

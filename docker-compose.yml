@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+
+  backend:
+    build: 
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@localhost:5432/mydb
+    depends_on:
+      - postgres
+  
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./apps/web/.env
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@localhost:5432/mydb
+    depends_on:
+      - postgres
+
+  ws:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.websocket
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@localhost:5432/mydb
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:15 # Use the desired version of PostgreSQL
+    container_name: turbo-repo-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: mydb
+    ports:
+      - "5432:5432" # Expose PostgreSQL on localhost:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Persist data
+
+volumes:
+  postgres_data:

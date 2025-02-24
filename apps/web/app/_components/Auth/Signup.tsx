@@ -62,6 +62,7 @@ function Signup() {
                 </label>
                 <input
                   id="username"
+                  name="username"
                   type="text"
                   value={userData.username}
                   onChange={handleOnChange}
@@ -76,6 +77,7 @@ function Signup() {
                 </label>
                 <input
                   id="email"
+                  name="email"
                   type="email"
                   value={userData.email}
                   onChange={handleOnChange}
@@ -90,6 +92,7 @@ function Signup() {
                 </label>
                 <input
                   id="password"
+                  name="password"
                   type="password"
                   value={userData.password}
                   onChange={handleOnChange}

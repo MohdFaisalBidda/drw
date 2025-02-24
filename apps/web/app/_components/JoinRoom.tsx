@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useShapeStore } from "../../stores/shapeStore";
 import { useRouter } from "next/navigation";
 import { styles } from "../../styles/shared";
 import { Paintbrush, Plus } from "lucide-react";
@@ -14,10 +13,6 @@ export default function JoinRoomPage({ allRooms }: { allRooms: any }) {
   const router = useRouter();
   const { user } = useUser();
 
-  // Zustand store methods
-  const initializeWebSocket = useShapeStore(
-    (state) => state.initializeWebSocket
-  );
 
   const handleJoinRoom = async () => {
     if (!roomId.trim()) {
@@ -29,8 +24,6 @@ export default function JoinRoomPage({ allRooms }: { allRooms: any }) {
       // Get auth token from localStorage
 
       // Initialize WebSocket and join room
-      initializeWebSocket(user.token, roomId);
-
       // Redirect to canvas page
       router.push(`/draw/${roomId}`);
     } catch (err) {

@@ -14,4 +14,4 @@ RUN npm run db:generate
 
 EXPOSE 8081
 
-CMD [ "npm", "start:websocket" ]
+CMD [ "npm","run", "start:websocket" ]
