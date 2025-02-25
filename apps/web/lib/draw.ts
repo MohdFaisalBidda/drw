@@ -349,28 +349,84 @@ export class Draw {
 
     const { x, y, width, height } = this.selectionBox!;
 
+    const selectionX = x - width / 2;
+    const selectionY = y - height / 2;
+
     this.ctx.setLineDash([5, 5]);
     this.ctx.strokeStyle = "blue";
 
     // Draw selection box accounting for transform
-    this.ctx.strokeRect(
-      x * this.transform.scale + this.transform.offsetX,
-      y * this.transform.scale + this.transform.offsetY,
-      width * this.transform.scale,
-      height * this.transform.scale
-    );
+    if (this.selectedShape?.type === "circle" || this.selectedShape?.type === "diamond") {
+      this.ctx.strokeRect(
+        selectionX * this.transform.scale + this.transform.offsetX,
+        selectionY * this.transform.scale + this.transform.offsetY,
+        width * this.transform.scale,
+        height * this.transform.scale
+      );
+
+      this.transformHandles = [
+        { x: selectionX, y: selectionY, cursor: "move", action: "move" }, // Top-left
+        { x: selectionX + width, y: selectionY, cursor: "move", action: "move" }, // Top-right
+        { x: selectionX, y: selectionY + height, cursor: "move", action: "move" }, // Bottom-left
+        { x: selectionX + width, y: selectionY + height, cursor: "move", action: "move" }, // Bottom-right
+        { x: selectionX + width / 2, y: selectionY + height / 2, cursor: "move", action: "move" }, // Center
+      ];
+
+      this.transformHandles.forEach((handle) => {
+        console.log("Drawing handle at:", handle.x, handle.y);
+        this.ctx.fillStyle = "white";
+        this.ctx.strokeStyle = "blue";
+        const handleX = (handle.x * this.transform.scale) + this.transform.offsetX;
+        const handleY = (handle.y * this.transform.scale) + this.transform.offsetY;
+        this.ctx.fillRect(handleX - 4, handleY - 4, 8, 8)
+        this.ctx.strokeRect(handleX - 4, handleY - 4, 8, 8)
+      })
+    } else if (this.selectedShape?.type === "line" || this.selectedShape?.type === "arrow") {
+      this.ctx.strokeRect(
+        selectionX * this.transform.scale + this.transform.offsetX,
+        selectionY * this.transform.scale + this.transform.offsetY,
+        width * this.transform.scale,
+        height * this.transform.scale
+      );
+
+      this.transformHandles = [
+        { x: selectionX, y: selectionY, cursor: "move", action: "move" }, // Top-left
+        { x: selectionX + width, y: selectionY, cursor: "move", action: "move" }, // Top-right
+        { x: selectionX, y: selectionY + height, cursor: "move", action: "move" }, // Bottom-left
+        { x: selectionX + width, y: selectionY + height, cursor: "move", action: "move" }, // Bottom-right
+        { x: selectionX + width / 2, y: selectionY + height / 2, cursor: "move", action: "move" }, // Center
+      ];
+
+      this.transformHandles.forEach((handle) => {
+        console.log("Drawing handle at:", handle.x, handle.y);
+        this.ctx.fillStyle = "white";
+        this.ctx.strokeStyle = "blue";
+        const handleX = (handle.x * this.transform.scale) + this.transform.offsetX;
+        const handleY = (handle.y * this.transform.scale) + this.transform.offsetY;
+        this.ctx.fillRect(handleX - 4, handleY - 4, 8, 8)
+        this.ctx.strokeRect(handleX - 4, handleY - 4, 8, 8)
+      })
+    }
+    else {
+      this.ctx.strokeRect(
+        x * this.transform.scale + this.transform.offsetX,
+        y * this.transform.scale + this.transform.offsetY,
+        width * this.transform.scale,
+        height * this.transform.scale
+      );
+
+      this.transformHandles.forEach((handle) => {
+        console.log("Drawing handle at:", handle.x, handle.y);
+        this.ctx.fillStyle = "white";
+        this.ctx.strokeStyle = "blue";
+        const handleX = (handle.x * this.transform.scale) + this.transform.offsetX;
+        const handleY = (handle.y * this.transform.scale) + this.transform.offsetY;
+        this.ctx.fillRect(handleX - 4, handleY - 4, 8, 8)
+        this.ctx.strokeRect(handleX - 4, handleY - 4, 8, 8)
+      })
+    }
 
     this.ctx.setLineDash([]);
-
-    this.transformHandles.forEach((handle) => {
-      console.log("Drawing handle at:", handle.x, handle.y);
-      this.ctx.fillStyle = "white";
-      this.ctx.strokeStyle = "blue";
-      const handleX = (handle.x * this.transform.scale) + this.transform.offsetX;
-      const handleY = (handle.y * this.transform.scale) + this.transform.offsetY;
-      this.ctx.fillRect(handleX - 4, handleY - 4, 8, 8)
-      this.ctx.strokeRect(handleX - 4, handleY - 4, 8, 8)
-    })
   }
 
   private handleMouseDown = (e: MouseEvent) => {
