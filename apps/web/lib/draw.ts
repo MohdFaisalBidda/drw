@@ -345,86 +345,143 @@ export class Draw {
   }
 
   private drawSelectionBox() {
-    if (!this.selectionBox) return;
-
-    const { x, y, width, height } = this.selectionBox!;
-
-    const selectionX = x - width / 2;
-    const selectionY = y - height / 2;
+    if (!this.selectionBox || !this.selectedShape) return;
 
     this.ctx.setLineDash([5, 5]);
     this.ctx.strokeStyle = "blue";
 
-    // Draw selection box accounting for transform
-    if (this.selectedShape?.type === "circle" || this.selectedShape?.type === "diamond") {
-      this.ctx.strokeRect(
-        selectionX * this.transform.scale + this.transform.offsetX,
-        selectionY * this.transform.scale + this.transform.offsetY,
-        width * this.transform.scale,
-        height * this.transform.scale
-      );
+    // Calculate selection box dimensions based on shape type
+    let selectionX, selectionY, selectionWidth, selectionHeight;
+    const padding = this.selectedShape.lineWidth || 5; // Use shape's line width or default
 
-      this.transformHandles = [
-        { x: selectionX, y: selectionY, cursor: "move", action: "move" }, // Top-left
-        { x: selectionX + width, y: selectionY, cursor: "move", action: "move" }, // Top-right
-        { x: selectionX, y: selectionY + height, cursor: "move", action: "move" }, // Bottom-left
-        { x: selectionX + width, y: selectionY + height, cursor: "move", action: "move" }, // Bottom-right
-        { x: selectionX + width / 2, y: selectionY + height / 2, cursor: "move", action: "move" }, // Center
-      ];
+    if (this.selectedShape.type === "circle" || this.selectedShape.type === "diamond") {
+      // For circle and diamond, use the existing calculation
+      selectionX = this.selectionBox.x - this.selectionBox.width / 2;
+      selectionY = this.selectionBox.y - this.selectionBox.height / 2;
+      selectionWidth = this.selectionBox.width;
+      selectionHeight = this.selectionBox.height;
+    }
+    else if (this.selectedShape.type === "line" ||
+      this.selectedShape.type === "arrow" ||
+      this.selectedShape.type === "draw") {
 
-      this.transformHandles.forEach((handle) => {
-        console.log("Drawing handle at:", handle.x, handle.y);
-        this.ctx.fillStyle = "white";
-        this.ctx.strokeStyle = "blue";
-        const handleX = (handle.x * this.transform.scale) + this.transform.offsetX;
-        const handleY = (handle.y * this.transform.scale) + this.transform.offsetY;
-        this.ctx.fillRect(handleX - 4, handleY - 4, 8, 8)
-        this.ctx.strokeRect(handleX - 4, handleY - 4, 8, 8)
-      })
-    } else if (this.selectedShape?.type === "line" || this.selectedShape?.type === "arrow") {
-      this.ctx.strokeRect(
-        selectionX * this.transform.scale + this.transform.offsetX,
-        selectionY * this.transform.scale + this.transform.offsetY,
-        width * this.transform.scale,
-        height * this.transform.scale
-      );
+      // For line-based shapes, add padding to ensure the full shape is encompassed
+      if (this.selectedShape.type === "draw" && Array.isArray(this.selectedShape.details.path)) {
+        // For draw paths, calculate bounds based on all points in the path
+        const points = this.selectedShape.details.path;
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
-      this.transformHandles = [
-        { x: selectionX, y: selectionY, cursor: "move", action: "move" }, // Top-left
-        { x: selectionX + width, y: selectionY, cursor: "move", action: "move" }, // Top-right
-        { x: selectionX, y: selectionY + height, cursor: "move", action: "move" }, // Bottom-left
-        { x: selectionX + width, y: selectionY + height, cursor: "move", action: "move" }, // Bottom-right
-        { x: selectionX + width / 2, y: selectionY + height / 2, cursor: "move", action: "move" }, // Center
-      ];
+        // Find min/max coordinates from all points in the path
+        points.forEach(point => {
+          minX = Math.min(minX, point.x);
+          minY = Math.min(minY, point.y);
+          maxX = Math.max(maxX, point.x);
+          maxY = Math.max(maxY, point.y);
+        });
 
-      this.transformHandles.forEach((handle) => {
-        console.log("Drawing handle at:", handle.x, handle.y);
-        this.ctx.fillStyle = "white";
-        this.ctx.strokeStyle = "blue";
-        const handleX = (handle.x * this.transform.scale) + this.transform.offsetX;
-        const handleY = (handle.y * this.transform.scale) + this.transform.offsetY;
-        this.ctx.fillRect(handleX - 4, handleY - 4, 8, 8)
-        this.ctx.strokeRect(handleX - 4, handleY - 4, 8, 8)
-      })
+        selectionX = minX - padding;
+        selectionY = minY - padding;
+        selectionWidth = (maxX - minX) + (padding * 2);
+        selectionHeight = (maxY - minY) + (padding * 2);
+      }
+      else {
+        // For line and arrow, add padding around start and end points
+        const startX = Math.min(this.selectedShape.x, this.selectedShape.details.endX);
+        const startY = Math.min(this.selectedShape.y, this.selectedShape.details.endY);
+        const endX = Math.max(this.selectedShape.x, this.selectedShape.details.endX);
+        const endY = Math.max(this.selectedShape.y, this.selectedShape.details.endY);
+
+        // Add extra padding for arrow heads if needed
+        const arrowPadding = this.selectedShape.type === "arrow" ? padding * 2 : padding;
+
+        selectionX = startX - padding;
+        selectionY = startY - padding;
+        selectionWidth = (endX - startX) + (padding * 2);
+        selectionHeight = (endY - startY) + (padding * 2);
+
+        // For diagonal lines, ensure we have enough padding in all directions
+        if (Math.abs(endY - startY) > 0 && Math.abs(endX - startX) > 0) {
+          // Add a bit more padding for diagonal lines
+          selectionX -= padding;
+          selectionY -= padding;
+          selectionWidth += padding * 2;
+          selectionHeight += padding * 2;
+        }
+      }
     }
     else {
-      this.ctx.strokeRect(
-        x * this.transform.scale + this.transform.offsetX,
-        y * this.transform.scale + this.transform.offsetY,
-        width * this.transform.scale,
-        height * this.transform.scale
-      );
-
-      this.transformHandles.forEach((handle) => {
-        console.log("Drawing handle at:", handle.x, handle.y);
-        this.ctx.fillStyle = "white";
-        this.ctx.strokeStyle = "blue";
-        const handleX = (handle.x * this.transform.scale) + this.transform.offsetX;
-        const handleY = (handle.y * this.transform.scale) + this.transform.offsetY;
-        this.ctx.fillRect(handleX - 4, handleY - 4, 8, 8)
-        this.ctx.strokeRect(handleX - 4, handleY - 4, 8, 8)
-      })
+      // For other shapes (rectangles, text, etc.), use the existing calculation
+      selectionX = this.selectionBox.x;
+      selectionY = this.selectionBox.y;
+      selectionWidth = this.selectionBox.width;
+      selectionHeight = this.selectionBox.height;
     }
+
+    // Draw the selection box with calculated dimensions
+    this.ctx.strokeRect(
+      selectionX * this.transform.scale + this.transform.offsetX,
+      selectionY * this.transform.scale + this.transform.offsetY,
+      selectionWidth * this.transform.scale,
+      selectionHeight * this.transform.scale
+    );
+
+    // Calculate and draw transform handles based on shape type
+    if (this.selectedShape.type === "circle" || this.selectedShape.type === "diamond") {
+      this.transformHandles = [
+        { x: selectionX, y: selectionY, cursor: "nwse-resize", action: "resize" }, // Top-left
+        { x: selectionX + selectionWidth, y: selectionY, cursor: "nesw-resize", action: "resize" }, // Top-right
+        { x: selectionX, y: selectionY + selectionHeight, cursor: "nesw-resize", action: "resize" }, // Bottom-left
+        { x: selectionX + selectionWidth, y: selectionY + selectionHeight, cursor: "nwse-resize", action: "resize" }, // Bottom-right
+        { x: selectionX + selectionWidth / 2, y: selectionY + selectionHeight / 2, cursor: "move", action: "move" }, // Center
+        { x: selectionX + selectionWidth / 2, y: selectionY, cursor: "ns-resize", action: "resize" }, // Top center
+        { x: selectionX + selectionWidth / 2, y: selectionY - 20, cursor: "rotate", action: "rotate" }, // Rotate
+        { x: selectionX, y: selectionY + selectionHeight / 2, cursor: "ew-resize", action: "resize" }, // Left center
+        { x: selectionX + selectionWidth, y: selectionY + selectionHeight / 2, cursor: "ew-resize", action: "resize" }, // Right center
+        { x: selectionX + selectionWidth / 2, y: selectionY + selectionHeight, cursor: "ns-resize", action: "resize" }, // Bottom center
+      ];
+    }
+    else if (this.selectedShape.type === "line" ||
+      this.selectedShape.type === "arrow" ||
+      this.selectedShape.type === "draw") {
+      // For line-based shapes, use specific handles
+      this.transformHandles = [
+        { x: selectionX, y: selectionY, cursor: "nwse-resize", action: "move" }, // Top-left
+        { x: selectionX + selectionWidth, y: selectionY, cursor: "nesw-resize", action: "move" }, // Top-right
+        { x: selectionX, y: selectionY + selectionHeight, cursor: "nesw-resize", action: "move" }, // Bottom-left
+        { x: selectionX + selectionWidth, y: selectionY + selectionHeight, cursor: "nwse-resize", action: "move" }, // Bottom-right
+        { x: selectionX + selectionWidth / 2, y: selectionY + selectionHeight / 2, cursor: "move", action: "move" }, // Center
+
+        // For line and arrow, add handles at the actual start and end points
+        ...(this.selectedShape.type !== "draw" && [
+          { x: this.selectedShape.x, y: this.selectedShape.y, cursor: "crosshair", action: "move" },
+          { x: this.selectedShape.details.endX, y: this.selectedShape.details.endY, cursor: "crosshair", action: "move" }
+        ])
+      ];
+    }
+    else {
+      // For other shapes, use standard resize handles
+      this.transformHandles = [
+        { x: selectionX, y: selectionY, cursor: "nwse-resize", action: "resize" }, // Top-left
+        { x: selectionX + selectionWidth, y: selectionY, cursor: "nesw-resize", action: "resize" }, // Top-right
+        { x: selectionX, y: selectionY + selectionHeight, cursor: "nesw-resize", action: "resize" }, // Bottom-left
+        { x: selectionX + selectionWidth, y: selectionY + selectionHeight, cursor: "nwse-resize", action: "resize" }, // Bottom-right
+        { x: selectionX + selectionWidth / 2, y: selectionY + selectionHeight / 2, cursor: "move", action: "move" }, // Center
+        { x: selectionX + selectionWidth / 2, y: selectionY, cursor: "ns-resize", action: "resize" }, // Top center
+        { x: selectionX, y: selectionY + selectionHeight / 2, cursor: "ew-resize", action: "resize" }, // Left center
+        { x: selectionX + selectionWidth, y: selectionY + selectionHeight / 2, cursor: "ew-resize", action: "resize" }, // Right center
+        { x: selectionX + selectionWidth / 2, y: selectionY + selectionHeight, cursor: "ns-resize", action: "resize" }, // Bottom center
+      ];
+    }
+
+    // Draw all transform handles
+    this.transformHandles.forEach((handle) => {
+      this.ctx.fillStyle = "white";
+      this.ctx.strokeStyle = "blue";
+      const handleX = (handle.x * this.transform.scale) + this.transform.offsetX;
+      const handleY = (handle.y * this.transform.scale) + this.transform.offsetY;
+      this.ctx.fillRect(handleX - 4, handleY - 4, 8, 8);
+      this.ctx.strokeRect(handleX - 4, handleY - 4, 8, 8);
+    });
 
     this.ctx.setLineDash([]);
   }
