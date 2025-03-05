@@ -38,20 +38,13 @@ interface TransformHandle {
   position?: "top" | "bottom" | "left" | "right" | "topLeft" | "topRight" | "bottomLeft" | "bottomRight"
 }
 
-interface SelectionBorderRect {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
 export class Draw {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private socket: WebSocket;
   private roomId: string;
   private shapes: Shape[] = [];
-  private currentTool: Tool = 'rect';
+  private currentTool: Tool = 'select';
   //draw variables
   private isDrawing = false;
   private startPoint: { x: number; y: number } | null = null;
@@ -59,22 +52,18 @@ export class Draw {
   private currentShape: Shape | null = null;
   public transform = { scale: 1, offsetX: 0, offsetY: 0 };
 
-  private selectedTool: Tool = 'rect';
+  private selectedTool: Tool = 'select';
   private deletedShapeIds: Set<string> = new Set();
   private shapeIdMap: Map<string, string> = new Map();
   private setEditingText: (text: EditingText | null) => void;
 
   //Selection variables
-  private selectionBox: SelectionBox | null = null;
-  private selectedShape: Shape | null = null;
+  public selectionBox: SelectionBox | null = null;
+  public selectedShape: Shape | null = null;
   private transformHandles: TransformHandle[] = [];
   private isTransforming = false;
   private activeHandle: TransformHandle | null = null;
   private transformStart: { x: number, y: number } | null = null;
-  private borderRect: SelectionBorderRect | null = null;
-
-  private isCircle = this.shapes.find((s) => s.id === this.selectionBox?.shapeId)?.type === "circle"
-
 
   constructor(canvas: HTMLCanvasElement, roomId: string, socket: WebSocket, setEditingText: (text: EditingText | null) => void) {
     this.canvas = canvas;
@@ -352,7 +341,7 @@ export class Draw {
 
     // Calculate selection box dimensions based on shape type
     let selectionX, selectionY, selectionWidth, selectionHeight;
-    const padding = this.selectedShape.lineWidth || 5; // Use shape's line width or default
+    const padding = this.selectedShape.details.lineWidth || 5; // Use shape's line width or default
 
     if (this.selectedShape.type === "circle" || this.selectedShape.type === "diamond") {
       // For circle and diamond, use the existing calculation
@@ -379,10 +368,16 @@ export class Draw {
           maxY = Math.max(maxY, point.y);
         });
 
-        selectionX = minX - padding;
-        selectionY = minY - padding;
-        selectionWidth = (maxX - minX) + (padding * 2);
-        selectionHeight = (maxY - minY) + (padding * 2);
+        const startX = this.selectedShape.x;
+        const startY = this.selectedShape.y;
+        const endX = this.selectedShape.details.endX;
+        const endY = this.selectedShape.details.endY;
+
+
+        selectionX = Math.min(startX, endX) - padding;
+        selectionY = Math.min(startY, endY) - padding;
+        selectionWidth = Math.abs(endX - startX) + padding * 2;
+        selectionHeight = Math.abs(endY - startY) + padding * 2;
       }
       else {
         // For line and arrow, add padding around start and end points
@@ -444,19 +439,7 @@ export class Draw {
       this.selectedShape.type === "arrow" ||
       this.selectedShape.type === "draw") {
       // For line-based shapes, use specific handles
-      this.transformHandles = [
-        { x: selectionX, y: selectionY, cursor: "nwse-resize", action: "move" }, // Top-left
-        { x: selectionX + selectionWidth, y: selectionY, cursor: "nesw-resize", action: "move" }, // Top-right
-        { x: selectionX, y: selectionY + selectionHeight, cursor: "nesw-resize", action: "move" }, // Bottom-left
-        { x: selectionX + selectionWidth, y: selectionY + selectionHeight, cursor: "nwse-resize", action: "move" }, // Bottom-right
-        { x: selectionX + selectionWidth / 2, y: selectionY + selectionHeight / 2, cursor: "move", action: "move" }, // Center
 
-        // For line and arrow, add handles at the actual start and end points
-        ...(this.selectedShape.type !== "draw" && [
-          { x: this.selectedShape.x, y: this.selectedShape.y, cursor: "crosshair", action: "move" },
-          { x: this.selectedShape.details.endX, y: this.selectedShape.details.endY, cursor: "crosshair", action: "move" }
-        ])
-      ];
     }
     else {
       // For other shapes, use standard resize handles

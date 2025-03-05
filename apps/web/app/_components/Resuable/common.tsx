@@ -59,28 +59,44 @@ export const Button = ({
   onClick,
   variant = "primary",
   href,
+  className,
 }: {
-  text: string | React.ReactNode;
+  text?: string | React.ReactElement;
   onClick?: () => void;
-  variant?: "primary" | "secondary";
+  variant?: "primary" | "secondary" | "outline";
   href?: string;
+  className?: string;
 }) => {
-  const classNames =
-    variant === "primary"
-      ? "w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 px-4 rounded-xl font-medium hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-200"
-      : "w-full bg-white text-gray-700 py-3 px-4 rounded-xl font-medium border border-gray-200 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-200";
+  // const classNames =
+  let classNames = "";
+  switch (variant) {
+    case "primary":
+      classNames =
+        "w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 px-4 rounded-xl font-medium hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-200";
+
+    case "secondary":
+      classNames =
+        "w-full bg-white text-gray-700 py-3 px-4 rounded-xl font-medium border border-gray-200 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-200";
+
+    case "outline":
+      classNames =
+        "w-full bg-none text-gray-700 py-3 px-4 rounded-xl font-medium border border-gray-200 border-solid hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-200";
+
+    default:
+      break;
+  }
 
   if (href) {
     return (
       <Link href={href}>
-        <button className={classNames}>{text}</button>
+        <button className={`${classNames} ${className}`}>{text}</button>
       </Link>
     );
   }
 
   return (
-    <button className={classNames} onClick={onClick}>
-      {text}
+    <button className={className} onClick={onClick}>
+      {text | }
     </button>
   );
 };

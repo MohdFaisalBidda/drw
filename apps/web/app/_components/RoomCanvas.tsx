@@ -3,7 +3,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import Canvas from "./Canvas";
 import { WS_URL } from "../../config";
-import Toolbar from "./Toolbar";
 
 // WebSocket close codes and their meanings
 const WS_CLOSE_CODES = {

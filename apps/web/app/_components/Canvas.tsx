@@ -4,6 +4,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { Draw, Shape, Tool } from "../../lib/draw";
 import Toolbar from "./Toolbar";
 import { Loader2, Minus, Plus, PowerOff, Sparkles } from "lucide-react";
+import SettingsPanel from "./SettingsPanel";
+import { PropertiesPanel } from "./PropertiesPanel";
 
 function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -124,6 +126,9 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
       <canvas ref={canvasRef} className="w-full h-full bg-black" />
       <Toolbar selectedTool={selectedTool} setSelectedTool={setSelectedTool} />
 
+      <div className="fixed inset-x-0 top-5 left-2">
+        <PropertiesPanel />
+      </div>
       <div className="absolute top-4 right-4 flex items-center gap-4">
         <div className="bg-black/30 backdrop-blur-sm rounded-lg border border-white/10 p-3 shadow-lg">
           <div className="flex items-center gap-2">
@@ -181,29 +186,31 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
 
       {/* Leave Room Confirmation Modal */}
       {showLeaveConfirmation && (
-       <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
-       <div className="bg-zinc-900 border border-white/10 p-6 rounded-lg shadow-xl">
-         <p className="mb-4 text-lg font-semibold text-white">Are you sure you want to leave the room?</p>
-         <div className="flex justify-end gap-3">
-           <button
-             className="px-4 py-2 rounded-lg
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+          <div className="bg-zinc-900 border border-white/10 p-6 rounded-lg shadow-xl">
+            <p className="mb-4 text-lg font-semibold text-white">
+              Are you sure you want to leave the room?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                className="px-4 py-2 rounded-lg
                       bg-white/10 hover:bg-white/20
                       text-white transition-colors"
-             onClick={() => setShowLeaveConfirmation(false)}
-           >
-             Cancel
-           </button>
-           <button
-             className="px-4 py-2 rounded-lg
+                onClick={() => setShowLeaveConfirmation(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 rounded-lg
                       bg-red-500/80 hover:bg-red-500
                       text-white transition-colors"
-             onClick={handleLeaveRoom}
-           >
-             Leave
-           </button>
-         </div>
-       </div>
-     </div>
+                onClick={handleLeaveRoom}
+              >
+                Leave
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       {editingText && (
         <div
@@ -251,7 +258,6 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
           <Plus className="w-4 h-4" />
         </button>
       </div>
-      {/* <SettingsPanel handleShare={handleShare} /> */}
     </>
   );
 }
