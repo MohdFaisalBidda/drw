@@ -1,12 +1,53 @@
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { Shape } from "@/lib/draw";
 import { cn } from "@/lib/utils";
 
 interface PropertiesPanelProps {
+  selectedShape: Shape | null;
+  onUpdateShape: (updatedShape: Shape) => void;
   className?: string;
 }
 
-export function PropertiesPanel({ className }: PropertiesPanelProps) {
+export function PropertiesPanel({
+  selectedShape,
+  onUpdateShape,
+  className,
+}: PropertiesPanelProps) {
+  if (!selectedShape) return null;
+
+  const handleStrokeColorChange = (color: string) => {
+    const updateShape = { ...selectedShape, strokeColor: color };
+    onUpdateShape(updateShape);
+  };
+
+  const handleStrokeWidthChange = (width: number) => {
+    const updateShape = { ...selectedShape, strokeWidth: width };
+    onUpdateShape(updateShape);
+  };
+
+  const handleStrokeStyleChange = (stokeStyle: string) => {
+    const updateShape = {
+      ...selectedShape,
+      details: { ...selectedShape.details, borderStyle: stokeStyle },
+    };
+    onUpdateShape(updateShape);
+    console.log(updateShape, "updateShape in handleStrokeStyleChange");
+  };
+
+  const handleFillColorChange = (color: string) => {
+    const updateShape = { ...selectedShape, fillColor: color };
+    onUpdateShape(updateShape);
+  };
+
+  const handleOpacityChange = (opacity: number) => {
+    const updateShape = {
+      ...selectedShape,
+      details: { ...selectedShape.details, opacity: opacity / 100 },
+    };
+    onUpdateShape(updateShape);
+  };
+
   return (
     <div
       className={cn(
@@ -18,72 +59,46 @@ export function PropertiesPanel({ className }: PropertiesPanelProps) {
       <div className="space-y-2">
         <label className="text-sm font-medium">Stroke</label>
         <div className="flex gap-1">
-          <Button
-            size={"sm"}
-            variant="outline"
-            className="w-7 h-7 p-0 bg-black"
-          />
-          <Button
-            size={"sm"}
-            variant="outline"
-            className="w-7 h-7 p-0 bg-red-500"
-          />
-          <Button
-            size={"sm"}
-            variant="outline"
-            className="w-7 h-7 p-0 bg-blue-500"
-          />
-          <Button
-            size={"sm"}
-            variant="outline"
-            className="w-7 h-7 p-0 bg-green-500"
-          />
-          <Button
-            size={"sm"}
-            variant="outline"
-            className="w-7 h-7 p-0 bg-orange-500"
-          />
-          <Button
-            size={"sm"}
-            variant="outline"
-            className="w-7 h-7 p-0 bg-zinc-900"
-          />
+          {[
+            "#000000",
+            "#FF0000",
+            "#0000FF",
+            "#00FF00",
+            "#FFA500",
+            "#333333",
+          ].map((color) => (
+            <Button
+              key={color}
+              size={"sm"}
+              variant="outline"
+              className="w-7 h-7 p-0"
+              style={{ backgroundColor: color }}
+              onClick={() => handleStrokeColorChange(color)}
+            />
+          ))}
         </div>
       </div>
 
       <div className="space-y-2">
         <label className="text-sm font-medium">Background</label>
         <div className="flex gap-1">
-          <Button
-            size={"sm"}
-            variant="outline"
-            className="w-7 h-7 p-0 bg-black"
-          />
-          <Button
-            size={"sm"}
-            variant="outline"
-            className="w-7 h-7 p-0 bg-red-500"
-          />
-          <Button
-            size={"sm"}
-            variant="outline"
-            className="w-7 h-7 p-0 bg-blue-500"
-          />
-          <Button
-            size={"sm"}
-            variant="outline"
-            className="w-7 h-7 p-0 bg-green-500"
-          />
-          <Button
-            size={"sm"}
-            variant="outline"
-            className="w-7 h-7 p-0 bg-orange-500"
-          />
-          <Button
-            size={"sm"}
-            variant="outline"
-            className="w-7 h-7 p-0 bg-zinc-900"
-          />
+          {[
+            "#000000",
+            "#FF0000",
+            "#0000FF",
+            "#00FF00",
+            "#FFA500",
+            "#333333",
+          ].map((color) => (
+            <Button
+              key={color}
+              size={"sm"}
+              variant="outline"
+              className="w-7 h-7 p-0"
+              style={{ backgroundColor: color }}
+              onClick={() => handleFillColorChange(color)}
+            />
+          ))}
         </div>
       </div>
 
@@ -91,15 +106,22 @@ export function PropertiesPanel({ className }: PropertiesPanelProps) {
       <div className="space-y-2">
         <label className="text-sm font-medium">Stroke width</label>
         <div className="flex gap-1">
-          <Button variant="secondary" className="w-7 h-7 p-0">
-            <div className="w-4 h-[2px] bg-foreground" />
-          </Button>
-          <Button variant="secondary" className="w-7 h-7 p-0">
-            <div className="w-4 h-1 bg-foreground" />
-          </Button>
-          <Button variant="secondary" className="w-7 h-7 p-0">
-            <div className="w-4 h-2 bg-foreground" />
-          </Button>
+          {[1, 2, 4].map((width) => (
+            <Button
+              key={width}
+              variant="secondary"
+              className="w-7 h-7 p-0"
+              onClick={() => handleStrokeWidthChange(width)}
+            >
+              <div
+                className="w-4"
+                style={{
+                  height: `${width}px`,
+                  backgroundColor: "currentColor",
+                }}
+              />
+            </Button>
+          ))}
         </div>
       </div>
 
@@ -107,13 +129,25 @@ export function PropertiesPanel({ className }: PropertiesPanelProps) {
       <div className="space-y-2">
         <label className="text-sm font-medium">Stroke style</label>
         <div className="flex gap-1">
-          <Button variant="secondary" className="w-7 h-7 p-0">
+          <Button
+            onClick={() => handleStrokeStyleChange("solid")}
+            variant="secondary"
+            className="w-7 h-7 p-0"
+          >
             <div className="w-4 h-[2px] bg-foreground" />
           </Button>
-          <Button variant="secondary" className="w-7 h-7 p-0">
+          <Button
+            onClick={() => handleStrokeStyleChange("dashed")}
+            variant="secondary"
+            className="w-7 h-7 p-0"
+          >
             <div className="w-4 h-[2px] bg-foreground border-dashed border-t-2" />
           </Button>
-          <Button variant="secondary" className="w-7 h-7 p-0">
+          <Button
+            onClick={() => handleStrokeStyleChange("dotted")}
+            variant="secondary"
+            className="w-7 h-7 p-0"
+          >
             <div className="w-4 h-[2px] bg-foreground border-dotted border-t-2" />
           </Button>
         </div>
@@ -168,7 +202,15 @@ export function PropertiesPanel({ className }: PropertiesPanelProps) {
       <div className="space-y-2">
         <label className="text-sm font-medium">Opacity</label>
         <div className="px-2">
-          <Slider defaultValue={[100]} max={100} step={1} />
+          <Slider
+            defaultValue={[100]}
+            max={100}
+            step={1}
+            onValueChange={(val) => {
+              console.log(val[0] / 100, val, "val");
+              handleOpacityChange(val[0] as number);
+            }}
+          />
         </div>
         <div className="flex justify-between text-xs text-muted-foreground">
           <span>0</span>

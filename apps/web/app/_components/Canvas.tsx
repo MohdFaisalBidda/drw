@@ -119,6 +119,12 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
     }
   };
 
+  const handleUpdateShape = (updatedShape: Shape) => {
+    if (draw) {
+      draw.updateShape(updatedShape);
+    }
+  };
+
   console.log(selectedTool, "selectedTool in canvas.tsx");
 
   return (
@@ -126,8 +132,11 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
       <canvas ref={canvasRef} className="w-full h-full bg-black" />
       <Toolbar selectedTool={selectedTool} setSelectedTool={setSelectedTool} />
 
-      <div className="fixed inset-x-0 top-5 left-2">
-        <PropertiesPanel />
+      <div className="absolute top-5 left-2 w-auto">
+        <PropertiesPanel
+          selectedShape={draw?.selectedShape || null}
+          onUpdateShape={handleUpdateShape}
+        />
       </div>
       <div className="absolute top-4 right-4 flex items-center gap-4">
         <div className="bg-black/30 backdrop-blur-sm rounded-lg border border-white/10 p-3 shadow-lg">

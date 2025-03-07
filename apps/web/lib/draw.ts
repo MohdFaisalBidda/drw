@@ -64,6 +64,7 @@ export class Draw {
   private isTransforming = false;
   private activeHandle: TransformHandle | null = null;
   private transformStart: { x: number, y: number } | null = null;
+  public onShapeSelected: (shape: Shape | null) => void = () => { };
 
   constructor(canvas: HTMLCanvasElement, roomId: string, socket: WebSocket, setEditingText: (text: EditingText | null) => void) {
     this.canvas = canvas;
@@ -142,6 +143,14 @@ export class Draw {
   public addGeneratedShapes(shape: Shape) {
     this.shapes.push(shape);
     this.redraw();
+  }
+
+  public updateShape(updatedShape: Shape) {
+    const index = this.shapes.findIndex((shape) => shape.id === updatedShape.id);
+    if (index !== -1) {
+      this.shapes[index] = updatedShape;
+      this.redraw();
+    }
   }
 
 
@@ -516,10 +525,12 @@ export class Draw {
         this.selectionBox = this.calculateBoundingBox(clickedShape);
         this.createTransformHandles()
         this.redraw()
+        this.onShapeSelected(clickedShape)
       } else {
         this.selectionBox = null;
         this.transformHandles = [];
         this.redraw();
+        this.onShapeSelected(null)
       }
       return
     }
@@ -894,19 +905,34 @@ export class Draw {
       this.ctx.rotate((shape.details.rotation * Math.PI) / 180);
     }
 
+    if (shape.details.opacity) {
+      this.ctx.globalAlpha = shape.details.opacity
+    }
+
+    if (shape.details.borderStyle) {
+      this.ctx.setLineDash(
+        shape.details.borderStyle === "dashed" ? [10, 5] :
+          shape.details.borderStyle === "dotted" ? [2, 2] : []
+      )
+    }
+
     this.ctx.strokeStyle = shape.strokeColor;
     this.ctx.lineWidth = shape.strokeWidth;
-    this.ctx.fillStyle = shape.fillColor;
+    this.ctx.fillStyle = shape.fillColor || "transparent";
 
     switch (shape.type) {
       case "rect":
-        this.ctx.strokeRect(0, 0, shape.details.width, shape.details.height);
+        this.ctx.beginPath();
+        this.ctx.rect(0, 0, shape.details.width, shape.details.height);
+        this.ctx.fill(); // Fill the circle
+        this.ctx.stroke(); 
         break;
 
       case "circle":
         this.ctx.beginPath();
         this.ctx.arc(0, 0, shape.details.radius, 0, Math.PI * 2);
-        this.ctx.stroke();
+        this.ctx.fill(); // Fill the circle
+        this.ctx.stroke(); 
         break;
 
       case "line":
@@ -971,7 +997,8 @@ export class Draw {
         this.ctx.lineTo(0, halfHeight);
         this.ctx.lineTo(-halfWidth, 0);
         this.ctx.closePath();
-        this.ctx.stroke();
+        this.ctx.fill(); // Fill the circle
+        this.ctx.stroke(); 
         break;
 
       default:
