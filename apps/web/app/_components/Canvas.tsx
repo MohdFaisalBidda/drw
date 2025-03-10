@@ -4,7 +4,6 @@ import React, { useEffect, useRef, useState } from "react";
 import { Draw, Shape, Tool } from "../../lib/draw";
 import Toolbar from "./Toolbar";
 import { Loader2, Minus, Plus, PowerOff, Sparkles } from "lucide-react";
-import SettingsPanel from "./SettingsPanel";
 import { PropertiesPanel } from "./PropertiesPanel";
 
 function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
@@ -134,8 +133,8 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
 
       <div className="absolute top-5 left-2 w-auto">
         <PropertiesPanel
-          selectedShape={draw?.selectedShape || null}
           onUpdateShape={handleUpdateShape}
+          draw={draw}
         />
       </div>
       <div className="absolute top-4 right-4 flex items-center gap-4">

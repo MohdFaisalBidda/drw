@@ -1,51 +1,59 @@
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Shape } from "@/lib/draw";
+import { Draw, Shape } from "@/lib/draw";
 import { cn } from "@/lib/utils";
 
 interface PropertiesPanelProps {
-  selectedShape: Shape | null;
   onUpdateShape: (updatedShape: Shape) => void;
   className?: string;
+  draw: Draw | undefined;
 }
 
 export function PropertiesPanel({
-  selectedShape,
   onUpdateShape,
   className,
+  draw,
 }: PropertiesPanelProps) {
-  if (!selectedShape) return null;
-
   const handleStrokeColorChange = (color: string) => {
-    const updateShape = { ...selectedShape, strokeColor: color };
-    onUpdateShape(updateShape);
+    if (draw?.selectedShape) {
+      const updatedShape = { ...draw.selectedShape, color };
+      draw.updateShape(updatedShape);
+      onUpdateShape(updatedShape);
+    }
+  };
+
+  const handleBgColorChange = (color: string) => {
+    if (draw?.selectedShape) {
+      const updatedShape = { ...draw.selectedShape, bgColor: color };
+      draw.updateShape(updatedShape);
+      onUpdateShape(updatedShape);
+    }
   };
 
   const handleStrokeWidthChange = (width: number) => {
-    const updateShape = { ...selectedShape, strokeWidth: width };
-    onUpdateShape(updateShape);
+    if (draw?.selectedShape) {
+      const updatedShape = { ...draw.selectedShape, strokeWidth: width };
+      draw.updateShape(updatedShape);
+      onUpdateShape(updatedShape);
+    }
   };
 
-  const handleStrokeStyleChange = (stokeStyle: string) => {
-    const updateShape = {
-      ...selectedShape,
-      details: { ...selectedShape.details, borderStyle: stokeStyle },
-    };
-    onUpdateShape(updateShape);
-    console.log(updateShape, "updateShape in handleStrokeStyleChange");
-  };
-
-  const handleFillColorChange = (color: string) => {
-    const updateShape = { ...selectedShape, fillColor: color };
-    onUpdateShape(updateShape);
+  const handleStrokeStyleChange = (style: string) => {
+    if (draw?.selectedShape) {
+      const updatedShape = { ...draw.selectedShape, strokeStyle: style };
+      draw.updateShape(updatedShape);
+      onUpdateShape(updatedShape);
+    }
   };
 
   const handleOpacityChange = (opacity: number) => {
-    const updateShape = {
-      ...selectedShape,
-      details: { ...selectedShape.details, opacity: opacity / 100 },
-    };
-    onUpdateShape(updateShape);
+    if (draw?.selectedShape) {
+      const updateShape = {
+        ...draw.selectedShape,
+        opacity: opacity / 100,
+      };
+      onUpdateShape(updateShape);
+    }
   };
 
   return (
@@ -96,7 +104,7 @@ export function PropertiesPanel({
               variant="outline"
               className="w-7 h-7 p-0"
               style={{ backgroundColor: color }}
-              onClick={() => handleFillColorChange(color)}
+              onClick={() => handleBgColorChange(color)}
             />
           ))}
         </div>

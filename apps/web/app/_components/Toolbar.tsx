@@ -25,7 +25,7 @@ function Toolbar({
     { type: "rect", icon: <Square className="h-5 w-5" /> },
     { type: "line", icon: <Minus className="h-5 w-5" /> },
     { type: "text", icon: <Type className="h-5 w-5" /> },
-    { type: "draw", icon: <Pencil className="h-5 w-5" /> },
+    { type: "pencil", icon: <Pencil className="h-5 w-5" /> },
     { type: "arrow", icon: <ArrowRight className="h-5 w-5" /> },
     { type: "diamond", icon: <Diamond className="h-5 w-5" /> },
     { type: "eraser", icon: <Eraser className="h-5 w-5" /> },
