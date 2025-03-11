@@ -4,7 +4,7 @@ export interface ResizeHandle {
     x: number;
     y: number;
     cursor: string;
-    position: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+    position: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'top';
 }
 
 export class SelectionManager {
@@ -59,6 +59,7 @@ export class SelectionManager {
 
         switch (shape.type) {
             case "rect":
+            case "diamond":
                 bounds.width = shape.width || 0;
                 bounds.height = shape.height || 0;
                 if (bounds.width < 0) {
@@ -82,13 +83,7 @@ export class SelectionManager {
                 bounds.width = radiusX * 2
                 bounds.height = radiusY * 2
                 break;
-            case "diamond":
-                const size = shape.size || 0;
-                bounds.width = size * 2;
-                bounds.height = size * 2;
-                bounds.x -= size;
-                bounds.y -= size;
-                break;
+
             case "line":
             case "arrow":
                 bounds.width = Math.abs(shape.endX - shape.x) + 20;
@@ -104,6 +99,21 @@ export class SelectionManager {
                 bounds.width = metrics.width + 20;
                 bounds.height = 48;
                 break;
+            case "pencil":
+                if (shape.path && shape.path.length > 0) {
+                    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                    shape.path.forEach(point => {
+                        minX = Math.min(minX, point.x);
+                        minY = Math.min(minY, point.y);
+                        maxX = Math.max(maxX, point.x);
+                        maxY = Math.max(maxY, point.y);
+                    })
+                    bounds.x = minX - 5;
+                    bounds.y = minY - 5;
+                    bounds.width = (maxX - minX) + 10;
+                    bounds.height = (maxY - minY) + 10;
+                }
+                break;
         }
 
         return bounds;
@@ -111,6 +121,7 @@ export class SelectionManager {
 
     private getResizeHandles(bounds: { x: number; y: number; width: number; height: number }): ResizeHandle[] {
         return [
+            { x: bounds.x + 105, y: bounds.y - 15, cursor: 'pointer', position: 'top' },
             { x: bounds.x, y: bounds.y, cursor: 'nw-resize', position: 'top-left' },
             { x: bounds.x + bounds.width, y: bounds.y, cursor: 'ne-resize', position: 'top-right' },
             { x: bounds.x, y: bounds.y + bounds.height, cursor: 'sw-resize', position: 'bottom-left' },
@@ -120,17 +131,22 @@ export class SelectionManager {
 
     drawSelectionBox(bounds: { x: number; y: number; width: number; height: number }) {
         this.ctx.save();
-        this.ctx.strokeStyle = '#6082B6';
-        // this.ctx.setLineDash([5, 5]);
+        this.ctx.strokeStyle = '#9333ea';
         this.ctx.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
 
         // Draw resize handles
-        this.ctx.fillStyle = '#6082B6';
+        this.ctx.fillStyle = '#9333ea';
         const handles = this.getResizeHandles(bounds);
         handles.forEach(handle => {
-            this.ctx.beginPath();
-            this.ctx.arc(handle.x, handle.y, 7, 0, Math.PI * 2);
-            this.ctx.fill();
+            if (handle.position === "top") {
+                this.ctx.beginPath();
+                this.ctx.arc(handle.x, handle.y, 5, 0, Math.PI * 2);
+                this.ctx.stroke()
+            } else {
+                this.ctx.beginPath();
+                this.ctx.arc(handle.x, handle.y, 7, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
         });
 
         this.ctx.restore();
@@ -138,9 +154,54 @@ export class SelectionManager {
 
     isPointInShape(x: number, y: number, shape: Shape): boolean {
         const bounds = this.getShapeBounds(shape);
+
+
+        if (shape.type === "line" || shape.type === "arrow") {
+            // Check if the point is near the line using distance formula
+            return this.isPointNearLine(x, y, shape.x, shape.y, shape.endX, shape.endY, 5);
+        }
+
+        if (shape.type === "pencil" && shape.path) {
+            // Check if the point is near any segment of the free draw path
+            for (let i = 0; i < shape.path.length - 1; i++) {
+                if (this.isPointNearLine(x, y, shape.path[i].x, shape.path[i].y, shape.path[i + 1].x, shape.path[i + 1].y, 5)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         return x >= bounds.x && x <= bounds.x + bounds.width &&
             y >= bounds.y && y <= bounds.y + bounds.height;
     }
+
+    isPointNearLine(px: number, py: number, x1: number, y1: number, x2: number, y2: number, threshold: number): boolean {
+        const A = px - x1;
+        const B = py - y1;
+        const C = x2 - x1;
+        const D = y2 - y1;
+
+        const dot = A * C + B * D;
+        const len_sq = C * C + D * D;
+        const param = len_sq !== 0 ? dot / len_sq : -1;
+
+        let xx, yy;
+        if (param < 0) {
+            xx = x1;
+            yy = y1;
+        } else if (param > 1) {
+            xx = x2;
+            yy = y2;
+        } else {
+            xx = x1 + param * C;
+            yy = y1 + param * D;
+        }
+
+        const dx = px - xx;
+        const dy = py - yy;
+        return dx * dx + dy * dy <= threshold * threshold;
+    }
+
 
     getResizeHandleAtPoint(x: number, y: number, bounds: { x: number; y: number; width: number; height: number }): ResizeHandle | null {
         const handles = this.getResizeHandles(bounds);

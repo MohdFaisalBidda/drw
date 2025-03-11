@@ -16,6 +16,7 @@ export interface Shape {
   width?: number;
   height?: number;
   rotation?: number;
+  size?: number;
   text?: string;
   path?: { x: number; y: number }[]; // For freehand drawing
   color: string;
@@ -194,8 +195,24 @@ export class Draw {
     this.startY = point.y;
 
     if (this.currentTool === "select") {
+
+      if (this.selectedShape) {
+        const bounds = this.selectionManager.getShapeBounds(this.selectedShape)
+        const handle = this.selectionManager.getResizeHandleAtPoint(point.x, point.y, bounds)
+
+        if (handle) {
+          this.selectionManager.startResizing(point.x, point.y)
+          return
+        }
+      }
+
       this.selectedShape = this.shapes.find((shape) => this.isPointInShape(point.x, point.y, shape)) || null;
       this.selectionManager.setSelectedShape(this.selectedShape);
+
+      if (this.selectedShape) {
+        this.selectionManager.startDragging(point.x, point.y)
+      }
+
       this.redraw();
       return;
     }
@@ -230,6 +247,23 @@ export class Draw {
   private handleMouseMove = (e: MouseEvent) => {
     const point = this.getCanvasPoint(e);
 
+    if (this.currentTool === "select") {
+      if (this.selectionManager.isDraggingShape() || this.selectionManager.isResizingShape()) {
+        if (this.selectionManager.isDraggingShape()) {
+          this.selectionManager.updateDragging(point.x, point.y)
+        } else if (this.selectionManager.isResizingShape()) {
+          this.selectionManager.updateResizing(point.x, point.y)
+        }
+        this.redraw()
+      } else if (this.selectedShape) {
+        const bounds = this.selectionManager.getShapeBounds(this.selectedShape)
+        const handle = this.selectionManager.getResizeHandleAtPoint(point.x, point.y, bounds)
+
+        this.canvas.style.cursor = handle?.cursor || 'auto'
+      }
+      return
+    }
+
     if (this.isDrawing) {
       if (this.currentTool === "pencil") {
         this.tempPath.push({ x: point.x, y: point.y });
@@ -248,6 +282,22 @@ export class Draw {
   };
 
   private handleMouseUp = () => {
+    if (this.currentTool === "select") {
+      if (this.selectionManager.isDraggingShape() || this.selectionManager.isResizingShape()) {
+        if (this.selectionManager.isDraggingShape()) {
+          this.selectionManager.stopDragging()
+        } else {
+          this.selectionManager.stopResizing()
+        }
+
+        if (this.selectedShape) {
+          this.sendShapeToServer(this.selectedShape)
+        }
+        this.redraw()
+      }
+      return
+    }
+
     if (this.isDrawing) {
       if (this.currentTool === "pencil" && this.tempPath.length > 1) {
         this.shapes.push({
@@ -268,6 +318,9 @@ export class Draw {
       } else if (this.selectedShape) {
         // Ensure width and height are set for rectangles and diamonds
         if (this.selectedShape.type === "rect" || this.selectedShape.type === "diamond") {
+          this.selectedShape.width = Math.abs(this.selectedShape.endX - this.selectedShape.x);
+          this.selectedShape.height = Math.abs(this.selectedShape.endY - this.selectedShape.y);
+        } else if (this.selectedShape.type === "circle") {
           this.selectedShape.width = Math.abs(this.selectedShape.endX - this.selectedShape.x);
           this.selectedShape.height = Math.abs(this.selectedShape.endY - this.selectedShape.y);
         }
@@ -302,6 +355,7 @@ export class Draw {
     this.ctx.translate(this.transform.offsetX, this.transform.offsetY);
     this.ctx.scale(this.transform.scale, this.transform.scale);
 
+    this.ctx.font = '24px Comic Sans MS, cursive';
     this.shapes.forEach((shape) => this.drawShape(shape));
 
     if (this.isDrawing && this.selectedShape) {
@@ -426,25 +480,67 @@ export class Draw {
   private isPointInShape(x: number, y: number, shape: Shape): boolean {
     switch (shape.type) {
       case "rect":
-        return (
-          x >= shape.x &&
-          x <= shape.x + (shape.width || 0) &&
-          y >= shape.y &&
-          y <= shape.y + (shape.height || 0)
-        );
+        return x >= shape.x && x <= shape.x + (shape.width || 0) &&
+          y >= shape.y && y <= shape.y + (shape.height || 0);
 
       case "circle":
         const centerX = (shape.x + shape.endX) / 2;
         const centerY = (shape.y + shape.endY) / 2;
         const radiusX = Math.abs(shape.endX - shape.x) / 2;
         const radiusY = Math.abs(shape.endY - shape.y) / 2;
-        return (
-          Math.pow((x - centerX) / radiusX, 2) + Math.pow((y - centerY) / radiusY, 2) <= 1
-        );
+        return Math.pow((x - centerX) / radiusX, 2) + Math.pow((y - centerY) / radiusY, 2) <= 1;
+
+      case "line":
+      case "arrow":
+        return this.isPointNearLine(x, y, shape.x, shape.y, shape.endX, shape.endY, 10);
+
+      case "diamond":
+        return this.isPointInDiamond(x, y, shape);
+
+      case "pencil":
+        if (!shape.path) return false;
+        for (let i = 0; i < shape.path.length - 1; i++) {
+          const p1 = shape.path[i];
+          const p2 = shape.path[i + 1];
+          if (this.isPointNearLine(x, y, p1.x, p1.y, p2.x, p2.y, 5)) return true;
+        }
+        return false;
+
+      case "text":
+        this.ctx.font = '24px Comic Sans MS, cursive';
+        const metrics = this.ctx.measureText(shape.text || "");
+        return x >= shape.x && x <= shape.x + metrics.width &&
+          y >= shape.y - 24 && y <= shape.y;
 
       default:
         return false;
     }
+  }
+
+
+  private isPointNearLine(px: number, py: number, x1: number, y1: number, x2: number, y2: number, tolerance: number): boolean {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const lengthSq = dx * dx + dy * dy;
+    if (lengthSq === 0) return Math.hypot(px - x1, py - y1) <= tolerance;
+
+    const t = ((px - x1) * dx + (py - y1) * dy) / lengthSq;
+    const tClamped = Math.max(0, Math.min(1, t));
+    const nearestX = x1 + tClamped * dx;
+    const nearestY = y1 + tClamped * dy;
+
+    return Math.hypot(px - nearestX, py - nearestY) <= tolerance;
+  }
+
+  private isPointInDiamond(x: number, y: number, shape: Shape): boolean {
+    const centerX = (shape.x + shape.endX) / 2;
+    const centerY = (shape.y + shape.endY) / 2;
+    const dx = Math.abs(x - centerX);
+    const dy = Math.abs(y - centerY);
+    const halfWidth = Math.abs(shape.endX - shape.x) / 2;
+    const halfHeight = Math.abs(shape.endY - shape.y) / 2;
+
+    return (dx / halfWidth) + (dy / halfHeight) <= 1;
   }
 
   // Additional Methods

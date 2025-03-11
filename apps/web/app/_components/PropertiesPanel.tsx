@@ -162,7 +162,7 @@ export function PropertiesPanel({
       </div>
 
       {/* Sloppiness */}
-      <div className="space-y-2">
+      {/* <div className="space-y-2">
         <label className="text-sm font-medium">Sloppiness</label>
         <div className="flex gap-1">
           <Button variant="secondary" className="w-7 h-7 p-0">
@@ -175,10 +175,10 @@ export function PropertiesPanel({
             ≈
           </Button>
         </div>
-      </div>
+      </div> */}
 
       {/* Arrow Type */}
-      <div className="space-y-2">
+      {/* <div className="space-y-2">
         <label className="text-sm font-medium">Arrow type</label>
         <div className="flex gap-1">
           <Button variant="secondary" className="w-7 h-7 p-0">
@@ -191,10 +191,10 @@ export function PropertiesPanel({
             ⇢
           </Button>
         </div>
-      </div>
+      </div> */}
 
       {/* Arrowheads */}
-      <div className="space-y-2">
+      {/* <div className="space-y-2">
         <label className="text-sm font-medium">Arrowheads</label>
         <div className="flex gap-1">
           <Button variant="secondary" className="w-7 h-7 p-0">
@@ -204,7 +204,7 @@ export function PropertiesPanel({
             →
           </Button>
         </div>
-      </div>
+      </div> */}
 
       {/* Opacity */}
       <div className="space-y-2">
@@ -227,7 +227,7 @@ export function PropertiesPanel({
       </div>
 
       {/* Layers */}
-      <div className="space-y-2">
+      {/* <div className="space-y-2">
         <label className="text-sm font-medium">Layers</label>
         <div className="flex gap-1">
           <Button variant="secondary" className="w-7 h-7 p-0">
@@ -243,10 +243,10 @@ export function PropertiesPanel({
             ⊤
           </Button>
         </div>
-      </div>
+      </div> */}
 
       {/* Actions */}
-      <div className="space-y-2">
+      {/* <div className="space-y-2">
         <label className="text-sm font-medium">Actions</label>
         <div className="flex gap-1">
           <Button variant="secondary" className="w-7 h-7 p-0">
@@ -262,7 +262,7 @@ export function PropertiesPanel({
             ⟲
           </Button>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }
