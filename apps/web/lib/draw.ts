@@ -566,12 +566,16 @@ export class Draw {
     this.redraw();
   }
 
-  updateShape(updatedShape: Shape) {
-    const index = this.shapes.findIndex((shape) => shape.id === updatedShape.id);
-    if (index !== -1) {
-      this.shapes[index] = updatedShape;
+  updateShape(updatedProperties: Partial<Shape>) {
+    if (!this.selectedShape) return
+
+    const updatedShape = { ...this.selectedShape, ...updatedProperties }
+
+    this.shapes = this.shapes.map((shape) =>
+      shape.id === updatedShape.id ? updatedShape : shape)
+
+    this.selectedShape = updatedShape
       this.redraw();
-    }
   }
 
   zoomIn(callback?: (scale: number) => void) {
