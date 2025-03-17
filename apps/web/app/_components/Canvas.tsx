@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Draw, Shape, Tool } from "../../lib/draw";
 import Toolbar from "./Toolbar";
-import { Loader2, Minus, Plus, PowerOff, Sparkles } from "lucide-react";
+import { Camera, Loader2, Minus, Plus, PowerOff, Sparkles } from "lucide-react";
 import { PropertiesPanel } from "./PropertiesPanel";
 
 function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
@@ -124,6 +124,16 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
     }
   };
 
+  const handleScreenshot = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const dataUrl = canvas.toDataURL("image/png");
+    const link = document.createElement("a");
+    link.download = "canvas-screenshot.png";
+    link.href = dataUrl;
+    link.click();
+  };
+
   console.log(selectedTool, "selectedTool in canvas.tsx");
 
   return (
@@ -132,10 +142,7 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
       <Toolbar selectedTool={selectedTool} setSelectedTool={setSelectedTool} />
 
       <div className="absolute top-5 left-2 w-auto">
-        <PropertiesPanel
-          onUpdateShape={handleUpdateShape}
-          draw={draw}
-        />
+        <PropertiesPanel onUpdateShape={handleUpdateShape} draw={draw} />
       </div>
       <div className="absolute top-4 right-4 flex items-center gap-4">
         <div className="bg-black/30 backdrop-blur-sm rounded-lg border border-white/10 p-3 shadow-lg">
@@ -248,6 +255,13 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
                     bg-black/30 backdrop-blur-sm rounded-lg 
                     border border-white/10 p-2 text-white"
       >
+        <button
+          onClick={handleScreenshot}
+          className="p-1 hover:bg-white/10 rounded transition-colors"
+          title="Take screenshot"
+        >
+          <Camera className="w-4 h-4" />
+        </button>
         <button
           onClick={() =>
             draw?.zoomOut((newScale: number) => setScale(newScale))

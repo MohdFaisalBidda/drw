@@ -81,6 +81,12 @@ wss.on('connection', (ws: Client, req) => {
           break;
         }
 
+        case 'UPDATE_SHAPE': {
+          const { message, roomId, shapeId } = payload;
+          await updateShape(ws, message, shapeId, roomId);
+          break;
+        }
+
         case "DELETE_SHAPE": {
           const { shapeId, roomId } = payload;
           console.log(shapeId, "shapeId in DELETE_SHAPE");
@@ -140,7 +146,7 @@ async function leaveRoom(ws: Client) {
           roomId: ws.currentRoom
         }
       })
-      
+
       await prisma.room.delete({
         where: {
           id: ws.currentRoom
@@ -186,6 +192,42 @@ async function deleteShape(ws: Client, shapeId: string, roomId: string) {
   }
 }
 
+async function updateShape(ws: Client, message: string, shapeId: string, roomId: string) {
+  try {
+    console.log(message, shapeId, roomId, "message in updateShape");
+
+    const updatedMessage = JSON.parse(message);
+
+    const updatedShape = await prisma.shape.update({
+      where: {
+        id: shapeId
+      },
+      data: {
+        message: JSON.stringify(updatedMessage)
+      }
+    })
+
+    const room = rooms[roomId];
+    if (room) {
+      room.members.forEach((member) => {
+        if (member.readyState === WebSocket.OPEN) {
+          member.send(JSON.stringify({
+            type: 'SHAPE_UPDATED',
+            payload: {
+              shape: updatedShape.message,
+              shapeId: shapeId,
+              roomId,
+              updatedBy: ws.userId
+            }
+          }))
+        }
+      })
+    }
+  } catch (error) {
+    console.log("Error updating shape", error);
+  }
+}
+
 
 async function broadcastMessage(ws: Client, message: string, roomId: string) {
   console.log(ws.currentRoom, "ws.currentRoom");
@@ -193,16 +235,32 @@ async function broadcastMessage(ws: Client, message: string, roomId: string) {
 
   console.log(message, ws, roomId, "message in broadcastMessage");
 
+  const shapeData = JSON.parse(message);
+
   const savedShape = await prisma.shape.create({
     data: {
-      message,
+      message: JSON.stringify({ ...shapeData, id: shapeData.id }),
       roomId,
       userId: ws.userId!,
     }
   })
 
+  console.log(savedShape.id, "savedShape.id in broadcastMessage");
+  
+  const updateMessageShapeId = await prisma.shape.update({
+    where: {
+      id: savedShape.id
+    },
+    data: {
+      message: JSON.stringify({ ...shapeData, id: savedShape.id })
+    }
+  })
+
+  const updatedShapeData = { ...shapeData, id: savedShape.id };
+  console.log(savedShape, updatedShapeData, "updatedShapeData in broadcastMessage");
+
+
   const room = rooms[roomId];
-  console.log(rooms, roomId, "room in broadcastShape");
 
   const members = Array.from(room.members);
   members.forEach((member) => {
@@ -211,8 +269,8 @@ async function broadcastMessage(ws: Client, message: string, roomId: string) {
         type: 'NEW_MESSAGE',
         payload: {
           roomId,
-          message,
-          shape: savedShape
+          message: JSON.stringify(updateMessageShapeId),
+          shape: JSON.stringify(updatedShapeData)
         }
       }))
     }

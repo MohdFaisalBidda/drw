@@ -65,6 +65,8 @@ export class Draw {
 
   async init() {
     const data = await this.fetchExistingShapes();
+    console.log(data, "data in init");
+
     this.shapes = data.message;
     this.redraw();
   }
@@ -138,6 +140,7 @@ export class Draw {
       response.data.shapes.forEach((x: { id: string, message: string }, index: number) => {
         try {
           const parsedMessage = JSON.parse(x.message);
+          // parsedMessage.id = x.id;
           message.push(parsedMessage);
           idMap[index.toString()] = x.id;
         } catch (error) {
@@ -166,6 +169,8 @@ export class Draw {
 
         if (message.type === 'NEW_MESSAGE') {
           const shape = JSON.parse(message.payload.message);
+          console.log(message.payload,"message.payload in NEW_MESSAGE");
+          
           this.shapes.push(shape);
           this.redraw();
         }
@@ -175,13 +180,14 @@ export class Draw {
           this.redraw();
         }
 
-        if (message.type === 'UPDATE_SHAPE') {
-          const updatedShape = JSON.parse(message.payload.message);
+        if (message.type === 'SHAPE_UPDATED') {
+          const updatedShape = JSON.parse(message.payload.shape);
           const index = this.shapes.findIndex((shape) => shape.id === updatedShape.id);
           if (index !== -1) {
             this.shapes[index] = updatedShape;
             this.redraw();
           }
+
         }
       } catch (error) {
         console.error('Failed to parse incoming message:', event.data, error);
@@ -218,6 +224,7 @@ export class Draw {
     }
 
     if (this.currentTool === "eraser") {
+      this.sendShapeDeletionToServer(this.shapes?.find((shape) => this.isPointInShape(point.x, point.y, shape))?.id!); // Send deletion to server
       this.shapes = eraseShape(this.shapes, point.x, point.y, 10, this.socket, this.roomId);
       this.redraw();
       return;
@@ -291,7 +298,7 @@ export class Draw {
         }
 
         if (this.selectedShape) {
-          this.sendShapeToServer(this.selectedShape)
+          this.sendShapeUpdateToServer(this.selectedShape, this.selectedShape.id)
         }
         this.redraw()
       }
@@ -300,9 +307,9 @@ export class Draw {
 
     if (this.isDrawing) {
       if (this.currentTool === "pencil" && this.tempPath.length > 1) {
-        this.shapes.push({
+        const newShape = {
           id: uuidv4(),
-          type: "pencil",
+          type: "pencil" as Tool,
           x: 0,
           y: 0,
           endX: 0,
@@ -313,7 +320,9 @@ export class Draw {
           strokeWidth: this.currStrokeWidth,
           strokeStyle: this.currStrokeStyle,
           opacity: this.currOpacity,
-        });
+        };
+        this.shapes.push(newShape);
+        this.sendShapeToServer(newShape); // Send the new shape to the server
         this.tempPath = [];
       } else if (this.selectedShape) {
         // Ensure width and height are set for rectangles and diamonds
@@ -332,11 +341,33 @@ export class Draw {
     }
   };
 
-  private sendShapeToServer(shape: Shape) {
+  private async sendShapeToServer(shape: Shape) {
     this.socket.send(
       JSON.stringify({
         type: 'NEW_MESSAGE',
         payload: { message: JSON.stringify(shape), roomId: this.roomId },
+      })
+    );
+  }
+
+  private sendShapeUpdateToServer(shape: Shape, shapeId: string) {
+    console.log(shape, shapeId, "shape in sendShapeUpdateToServer");
+
+    this.socket.send(
+      JSON.stringify({
+        type: 'UPDATE_SHAPE',
+        payload: { message: JSON.stringify(shape), roomId: this.roomId, shapeId: shapeId },
+      })
+    );
+  }
+
+  private sendShapeDeletionToServer(shapeId: string) {
+    console.log(shapeId, "shapeId in sendShapeDeletionToServer");
+
+    this.socket.send(
+      JSON.stringify({
+        type: 'DELETE_SHAPE',
+        payload: { shapeId, roomId: this.roomId },
       })
     );
   }
@@ -375,6 +406,7 @@ export class Draw {
       this.selectionManager.drawSelectionBox(bounds);
     }
 
+    // this.sendShapeUpdateToServer(this.selectedShape!, this.selectedShape?.id!);
     this.ctx.restore();
   }
 
@@ -568,14 +600,21 @@ export class Draw {
 
   updateShape(updatedProperties: Partial<Shape>) {
     if (!this.selectedShape) return
+    console.log(this.selectedShape, "this.selectedShape in updateShape");
 
     const updatedShape = { ...this.selectedShape, ...updatedProperties }
 
-    this.shapes = this.shapes.map((shape) =>
-      shape.id === updatedShape.id ? updatedShape : shape)
+    // this.shapes = this.shapes.map((shape) =>
+    //   shape.id === updatedShape.id ? updatedShape : shape)
+    const shapeIndex= this.shapes.findIndex((shape) => shape.id === updatedShape.id);
+    if(shapeIndex !== -1) {
+      this.shapes[shapeIndex] = updatedShape
+    }
 
     this.selectedShape = updatedShape
-      this.redraw();
+    console.log(updatedShape, "updatedShape in updateShape");
+    this.sendShapeUpdateToServer(updatedShape, updatedShape.id);
+    this.redraw();
   }
 
   zoomIn(callback?: (scale: number) => void) {
