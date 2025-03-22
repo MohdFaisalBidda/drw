@@ -164,7 +164,7 @@ export class SelectionManager {
         if (shape.type === "pencil" && shape.path) {
             // Check if the point is near any segment of the free draw path
             for (let i = 0; i < shape.path.length - 1; i++) {
-                if (this.isPointNearLine(x, y, shape.path[i].x, shape.path[i].y, shape.path[i + 1].x, shape.path[i + 1].y, 5)) {
+                if (this.isPointNearLine(x, y, shape.path[i]?.x as number, shape.path[i]?.y as number, shape.path[i + 1]?.x as number, shape.path[i + 1]?.y as number, 5)) {
                     return true;
                 }
             }

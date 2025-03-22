@@ -27,10 +27,10 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
         canvasRef.current,
         roomId!,
         socket!,
-        (text) => {
-          console.log("setEditingText called with:", text);
-          setEditingText(text);
-        }
+        // (text) => {
+        //   console.log("setEditingText called with:", text);
+        //   setEditingText(text);
+        // }
       );
       setDraw(drawInstance);
 
@@ -127,7 +127,23 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
   const handleScreenshot = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const dataUrl = canvas.toDataURL("image/png");
+
+    const originalCanvas = canvas
+    const originalCtx =originalCanvas.getContext("2d");
+    if (!originalCtx) return;
+
+    const screenShotCanvas = document.createElement("canvas");
+    screenShotCanvas.width = canvas.width;
+    screenShotCanvas.height = canvas.height;
+    const screenShotCtx = screenShotCanvas.getContext("2d");
+    if (!screenShotCtx) return;
+
+    screenShotCtx.fillStyle = "#000000";
+    screenShotCtx.fillRect(0, 0, canvas.width, canvas.height);
+    screenShotCtx.drawImage(originalCanvas, 0, 0);
+
+    const dataUrl = screenShotCanvas.toDataURL("image/png");
+
     const link = document.createElement("a");
     link.download = "canvas-screenshot.png";
     link.href = dataUrl;

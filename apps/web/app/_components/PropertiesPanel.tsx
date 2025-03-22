@@ -215,7 +215,7 @@ export function PropertiesPanel({
             max={100}
             step={1}
             onValueChange={(val) => {
-              console.log(val[0] / 100, val, "val");
+              if (!val) return;
               handleOpacityChange(val[0] as number);
             }}
           />

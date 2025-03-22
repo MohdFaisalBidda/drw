@@ -1,5 +1,4 @@
 import { v4 as uuidv4 } from 'uuid';
-import { HTTP_URL } from '../config';
 import axios from 'axios';
 
 export type Tool = 'rect' | 'circle' | 'pencil' | 'line' | 'text' | 'arrow' | 'diamond' | 'draw' | 'eraser' | 'select';
@@ -156,7 +155,7 @@ export class Draw {
 
   private async fetchExistingShapes(): Promise<{ id: Record<string, string>, message: Shape[] }> {
     try {
-      const response = await axios.get(`${HTTP_URL}/api/room/${this.roomId}/shapes`);
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_NEXT_PUBLIC_HTTP_URL}/api/room/${this.roomId}/shapes`);
       console.log(response.data.shapes, "response in fetch");
 
       const message: Shape[] = [];
@@ -370,7 +369,7 @@ export class Draw {
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
         // Find min/max coordinates from all points in the path
-        points.forEach(point => {
+        points.forEach((point: { x: number; y: number }) => {
           minX = Math.min(minX, point.x);
           minY = Math.min(minY, point.y);
           maxX = Math.max(maxX, point.x);
@@ -925,14 +924,14 @@ export class Draw {
         this.ctx.beginPath();
         this.ctx.rect(0, 0, shape.details.width, shape.details.height);
         this.ctx.fill(); // Fill the circle
-        this.ctx.stroke(); 
+        this.ctx.stroke();
         break;
 
       case "circle":
         this.ctx.beginPath();
         this.ctx.arc(0, 0, shape.details.radius, 0, Math.PI * 2);
         this.ctx.fill(); // Fill the circle
-        this.ctx.stroke(); 
+        this.ctx.stroke();
         break;
 
       case "line":
@@ -998,7 +997,7 @@ export class Draw {
         this.ctx.lineTo(-halfWidth, 0);
         this.ctx.closePath();
         this.ctx.fill(); // Fill the circle
-        this.ctx.stroke(); 
+        this.ctx.stroke();
         break;
 
       default:

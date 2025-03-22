@@ -1,5 +1,4 @@
 import { v4 as uuidv4 } from 'uuid';
-import { HTTP_URL } from '../config';
 import axios from 'axios';
 import { SelectionManager } from './selectionManager';
 import { eraseShape } from './eraser';
@@ -133,7 +132,7 @@ export class Draw {
 
   private async fetchExistingShapes(): Promise<{ id: Record<string, string>, message: Shape[] }> {
     try {
-      const response = await axios.get(`${HTTP_URL}/api/room/${this.roomId}/shapes`);
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_NEXT_PUBLIC_HTTP_URL}/api/room/${this.roomId}/shapes`);
       const message: Shape[] = [];
       const idMap: Record<string, string> = {};
 
@@ -169,9 +168,18 @@ export class Draw {
 
         if (message.type === 'NEW_MESSAGE') {
           const shape = JSON.parse(message.payload.message);
-          console.log(message.payload,"message.payload in NEW_MESSAGE");
-          
-          this.shapes.push(shape);
+          console.log(message.payload, "message.payload in NEW_MESSAGE");
+          const existingIndex = this.shapes.findIndex((s) => s.id === shape.id);
+          if (existingIndex === -1) {
+            this.shapes.push(shape);
+          } else {
+            // Replace existing shape to avoid duplicates
+            this.shapes[existingIndex] = shape;
+          }
+          if (this.selectedShape && this.selectedShape.id === shape.id) {
+            this.selectedShape = shape;
+            this.selectionManager.setSelectedShape(shape);
+          }
           this.redraw();
         }
 
@@ -337,6 +345,7 @@ export class Draw {
         this.sendShapeToServer(this.selectedShape);
       }
       this.isDrawing = false;
+      this.selectedShape = null;
       this.redraw();
     }
   };
@@ -395,7 +404,7 @@ export class Draw {
 
     if (this.currentTool === "pencil" && this.tempPath.length > 0) {
       this.ctx.beginPath();
-      this.ctx.moveTo(this.tempPath[0].x, this.tempPath[0].y);
+      this.ctx.moveTo(this.tempPath[0]?.x as number, this.tempPath[0]?.y as number);
       this.tempPath.forEach((point) => this.ctx.lineTo(point.x, point.y));
       this.ctx.stroke();
     }
@@ -480,7 +489,7 @@ export class Draw {
       case "pencil":
         if (shape.path && shape.path.length > 0) {
           this.ctx.beginPath();
-          this.ctx.moveTo(shape.path[0].x, shape.path[0].y);
+          this.ctx.moveTo(shape.path[0]?.x as number, shape?.path[0]?.y as number);
           shape.path.forEach((point) => this.ctx.lineTo(point.x, point.y));
           this.ctx.stroke();
         }
@@ -534,7 +543,7 @@ export class Draw {
         for (let i = 0; i < shape.path.length - 1; i++) {
           const p1 = shape.path[i];
           const p2 = shape.path[i + 1];
-          if (this.isPointNearLine(x, y, p1.x, p1.y, p2.x, p2.y, 5)) return true;
+          if (this.isPointNearLine(x, y, p1?.x as number, p1?.y as number, p2?.x as number, p2?.y as number, 5)) return true;
         }
         return false;
 
@@ -606,8 +615,8 @@ export class Draw {
 
     // this.shapes = this.shapes.map((shape) =>
     //   shape.id === updatedShape.id ? updatedShape : shape)
-    const shapeIndex= this.shapes.findIndex((shape) => shape.id === updatedShape.id);
-    if(shapeIndex !== -1) {
+    const shapeIndex = this.shapes.findIndex((shape) => shape.id === updatedShape.id);
+    if (shapeIndex !== -1) {
       this.shapes[shapeIndex] = updatedShape
     }
 

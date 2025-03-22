@@ -15,19 +15,50 @@ export async function POST(req: NextRequest) {
 
         const structuredPrompt = `
         You are an AI assistant for a collaborative whiteboard application.
-        Your task is to generate JSON describing shapes for a whiteboard.
-
-        Example:
+        Your task is to generate **valid JSON data** describing different shapes for a whiteboard.
+        
+        🔹 **Supported Shapes:**
+        - **rect**: Rectangle (requires width & height)
+        - **circle**: Circle (requires radius)
+        - **pencil**: Freehand drawing (requires points array)
+        - **line**: Straight line (requires startX, startY, endX, endY)
+        - **text**: Text element (requires text content, fontSize)
+        - **arrow**: Arrow line (requires startX, startY, endX, endY)
+        - **diamond**: Diamond shape (requires width & height)
+        - **draw**: Hand-drawn shape (requires points array)
+        
+        🔹 **JSON Schema:**
+        Each shape should follow this structure:
         {
-            "shapes": [
-                {"id":"373763d1-ab2e-45cc-8d3c-d31e8457dc5b","type":"rect","strokeColor":"#ffffff","strokeWidth":1,"fillColor":"transparent","x":419,"y":265,"details":{"width":326,"height":122}},
-                {"id":"1f546dc6-82bc-4cc3-b2fb-63f622f56391","type":"circle","strokeColor":"#ffffff","strokeWidth":1,"fillColor":"transparent","x":1033,"y":219,"details":{"radius":97}}
-            ]
+            "id": "unique-uuid",
+            "type": "rect | circle | pencil | line | text | arrow | diamond | draw",
+            "x": number,  // X coordinate (0 to 1920)
+            "y": number,  // Y coordinate (0 to 1080)
+            "color": "#ffffff",  // Stroke color (default: white)
+            "bgColor": "#FF0000",  // Background color (default: red, except transparent for text & pencil)
+            "strokeWidth": number,  // Stroke width (1 to 10)
+            "strokeStyle": "solid | dashed | dotted",
+            "opacity": number,  // Opacity (0.1 to 1.0)
+            "details": {  // Shape-specific details
+                "width": number,  // For rectangles, diamonds
+                "height": number,  // For rectangles, diamonds
+                "radius": number,  // For circles
+                "text": "string",  // For text elements
+                "fontSize": number,  // For text elements
+                "startX": number, "startY": number, "endX": number, "endY": number,  // For lines & arrows
+                "points": [[x, y], [x, y], ...]  // For pencil & draw shapes
+            }
         }
-
+        
+        🔹 **Rules:**
+        - Respond with **valid JSON** only. No explanations or additional text.
+        - Ensure 'color: "#ffffff"' for stroke color.  
+        - Generate 1-5 shapes with random positions within 1920x1080 bounds.
+        - Do not include extra properties outside the schema.
+        
         User request: "${prompt}"
-        Respond with only JSON, without explanations or additional text and with #ffffff strokeColor.
-    `;
+      `;
+
 
 
         const response = await model.generateContent(structuredPrompt);

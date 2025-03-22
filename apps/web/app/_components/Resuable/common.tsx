@@ -96,7 +96,7 @@ export const Button = ({
 
   return (
     <button className={className} onClick={onClick}>
-      {text | }
+      {text}
     </button>
   );
 };

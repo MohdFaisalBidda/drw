@@ -1,26 +1,128 @@
-# Turborepo starter
+# DrawSync (Collaborative Drawing Application)
 
-This is an official starter Turborepo.
+A full-featured collaborative drawing platform built with Next.js, WebSockets, and modern web technologies. This monorepo project enables real-time collaborative drawing, user management, and project sharing.
 
-## Using this example
+## Features
 
-Run the following command:
+- **Real-time Collaboration**: Draw together with multiple users simultaneously
+- **User Authentication**: Secure login and user management
+- **Project Sharing**: Create and share drawing projects with team members
+- **Responsive Design**: Works on desktop and mobile devices
+- **Offline Support**: Continue working when disconnected and sync when reconnected
+
+## Tech Stack
+
+### Frontend
+
+- [Next.js](https://nextjs.org/) - React framework for web applications
+- TypeScript - For type safety and better developer experience
+- React - UI library
+- Socket.io-client - For real-time WebSocket communication
+
+### Backend
+
+- Node.js - JavaScript runtime
+- Express - Web framework
+- WebSockets - For real-time communication
+- Prisma - Database ORM
+- PostgreSQL - Database
+
+### DevOps & Infrastructure
+
+- Docker - Containerization
+- Turborepo - Monorepo management
+- ESLint - Code linting
+- Prettier - Code formatting
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (v16 or later)
+- npm or pnpm
+- Docker and Docker Compose (for containerized setup)
+- PostgreSQL (if running locally without Docker)
+
+### Installation
+
+#### Option 1: Local Development with npm/pnpm
+
+1. Clone the repository:
 
 ```sh
-npx create-turbo@latest
+git clone https://github.com/yourusername/collaborative-drawing-app.git
+cd collaborative-drawing-app
 ```
 
-## What's inside?
+2. Install dependencies:
+
+```sh
+pnpm install
+# or
+npm install
+```
+
+3. Set up environment variables:
+
+```sh
+cp .env.example .env
+# Edit .env with your database credentials and other configurations
+```
+
+4. Set up the database:
+
+```sh
+pnpm db:migrate
+# or
+npm run db:migrate
+```
+
+5. Start the development server:
+
+```sh
+pnpm dev
+# or
+npm run dev
+```
+
+#### Option 2: Docker Development
+
+1. Clone the repository:
+
+```sh
+git clone https://github.com/yourusername/collaborative-drawing-app.git
+cd collaborative-drawing-app
+```
+
+2. Create and configure environment file:
+
+```sh
+cp .env.example .env
+# Edit .env with appropriate values
+```
+
+3. Build and start the Docker containers:
+
+```sh
+docker-compose up -d
+```
+
+4. Access the application at `http://localhost:3000`
+
+## Project Structure
 
 This Turborepo includes the following packages/apps:
 
 ### Apps and Packages
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+- `web`: Next.js web frontend application
+- `api`: HTTP backend server
+- `socket`: WebSocket backend server for real-time updates
+- `docs`: Documentation site built with Next.js
+- `@repo/ui`: Shared React component library
+- `@repo/eslint-config`: ESLint configurations
+- `@repo/typescript-config`: TypeScript configurations
+- `@repo/database`: Prisma schema and database utilities
 
 Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
 
@@ -71,6 +173,54 @@ Next, you can link your Turborepo to your Remote Cache by running the following 
 ```
 npx turbo link
 ```
+
+## Deployment
+
+### Production Build
+
+To create a production build:
+
+```
+pnpm build
+# or
+npm run build
+```
+
+### Docker Production Deployment
+
+1. Build the production Docker image:
+
+```sh
+docker-compose -f docker-compose.prod.yml build
+```
+
+2. Deploy the containers:
+
+```sh
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+## Testing
+
+Run tests across all packages:
+
+```
+pnpm test
+# or
+npm test
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Useful Links
 

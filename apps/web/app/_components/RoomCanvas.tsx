@@ -2,7 +2,6 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import Canvas from "./Canvas";
-import { WS_URL } from "../../config";
 
 // WebSocket close codes and their meanings
 const WS_CLOSE_CODES = {
@@ -43,7 +42,7 @@ function RoomCanvas({ roomId }: { roomId: string }) {
 
       try {
         const token = localStorage.getItem("token");
-        const wsUrl = `${WS_URL}?token=${token}`;
+        const wsUrl = `${process.env.NEXT_PUBLIC_NEXT_PUBLIC_WS_URL}?token=${token}`;
         console.log("Attempting to connect to:", wsUrl);
 
         ws = new WebSocket(wsUrl);
