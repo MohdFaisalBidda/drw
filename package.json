@@ -6,16 +6,16 @@
     "dev": "turbo dev",
     "lint": "turbo lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "db:generate": "cd packages/db && npx prisma generate && cd ../..",
-    "start:web": "cd apps/web && npm run dev",
-    "start:backend": "cd apps/http-backend && npm run dev",
-    "start:websocket": "cd apps/ws-backend && npm run dev"
+    "db:generate": "npx -w @exceli-draw/db prisma generate",
+    "start:web": "npx -w @exceli-draw/web dev",
+    "start:backend": "npx -w @exceli-draw/http-backend dev",
+    "start:websocket": "npx -w @exceli-draw/ws-backend dev"
   },
-  "exports":{
-    "backend-common":"./packages/backend-common",
-    "common":"./packages/common",
-    "db":"./packages/db",
-    "frontend":"./packages/frontend"
+  "exports": {
+    "backend-common": "./packages/backend-common",
+    "common": "./packages/common",
+    "db": "./packages/db",
+    "frontend": "./packages/frontend"
   },
   "devDependencies": {
     "prettier": "^3.2.5",
