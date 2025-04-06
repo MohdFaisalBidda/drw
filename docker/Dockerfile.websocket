@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:20-alpine AS base
 
 WORKDIR /usr/src/app
 
@@ -9,9 +9,20 @@ COPY ./turbo.json ./turbo.json
 
 COPY ./apps/ws-backend ./apps/ws-backend
 
-RUN npm install
-RUN npm run db:generate
+# Install global Prisma CLI
+RUN npm install -g prisma@6.5.0
 
+# Change to the packages/db directory and generate Prisma client
+WORKDIR /usr/src/app/packages/db
+RUN prisma generate
+
+# Change back to the root directory
+WORKDIR /usr/src/app
+
+# Build the websocket service
+RUN npm run build
+
+# Expose the port
 EXPOSE 8081
 
 CMD [ "npm","run", "start:websocket" ]

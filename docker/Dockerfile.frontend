@@ -1,18 +1,38 @@
-FROM node:20-alpine
+FROM node:20-alpine As base
+
+ARG DATABASE_URL
+ARG JWT_SECRET
 
 WORKDIR /usr/src/app
 
 COPY ./packages ./packages
-
 COPY ./package.json ./package.json
-COPY ./turbo.json ./turbo.json
-
+COPY ./turbo.json ./packages.json
 COPY ./apps/web ./apps/web
 
-RUN npm install
+# Install global Prisma CLI
+RUN npm install -g prisma@6.5.0
 
-RUN npm run db:generate
-RUN DATABASE_URL=${DATABASE_URL} npm run build
+# Change to the packages/db directory and generate Prisma client
+WORKDIR /usr/src/app/packages/db
+RUN prisma generate
+
+WORKDIR /usr/src/app
+
+#Set env var
+ENV DATABASE_URL=${DATABASE_URL}
+ENV JWT_SECRET=${JWT_SECRET}
+
+#Create .env local for nextjs
+WORKDIR /usr/src/apps/web
+RUN echo "JWT_SECRET=$JWT_SECRET" > .env.local
+RUN echo "DATABASE_URL=$DATABASE_URL" >> .env.local
+
+# Change back to the root directory
+WORKDIR /usr/src/app
+
+# Build the application with database URL
+RUN DATABASE_URL=${DATABASE_URL} JWT_SECRET=${JWT_SECRET} npm run build
 
 EXPOSE 3000
 

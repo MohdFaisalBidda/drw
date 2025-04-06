@@ -2,6 +2,7 @@
   "name": "exceli-draw",
   "private": true,
   "scripts": {
+    "start":"turbo dev",
     "build": "turbo build",
     "dev": "turbo dev",
     "lint": "turbo lint",
