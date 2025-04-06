@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "db:generate": "npx prisma generate && npx prisma migrate dev",
-    "vercel-build": "prisma generate --schema=../../packages/db/prisma/schema.prisma && next build",
+    "vercel-build": "cd ../../packages/db && npm run generate && cd ../../apps/web && next build",
     "lint": "next lint --max-warnings 0",
     "check-types": "tsc --noEmit"
   },
