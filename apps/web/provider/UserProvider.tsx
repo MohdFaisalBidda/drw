@@ -1,28 +1,22 @@
 "use client";
 
+import { SessionProvider, useSession } from "next-auth/react";
 import { createContext, use, useContext, useEffect, useState } from "react";
 
 const userContext = createContext<any>(null);
 
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { data: session, status } = useSession();
+  console.log(session, status, "session in user provider");
+
   const [user, setUser] = useState<any>(null);
 
-  // Load user from localStorage on mount
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+    if (status === "authenticated" && session?.user) {
+      setUser(session.user); // ✅ only store the user object
     }
-  }, []);
-
-  // Update localStorage whenever user state changes
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem("user", JSON.stringify(user));
-    } else {
-      localStorage.removeItem("user");
-    }
-  }, [user]);
+  }, [session, status]);
 
   return (
     <userContext.Provider value={{ user, setUser }}>
@@ -31,4 +25,12 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-export const useUser = () => useContext(userContext);
+export const useUser = () => {
+  const context = useContext(userContext);
+  if (!context) {
+    return { user: null, setUser: () => {} }; // safe fallback
+  }
+  console.log(context, "context in useUser");
+
+  return context;
+};

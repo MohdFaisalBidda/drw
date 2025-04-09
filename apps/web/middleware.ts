@@ -1,9 +1,10 @@
+import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   // Get token from cookies
-  const token = req.cookies.get("token")?.value;
+  const token = await getToken({ req, secret: process.env.JWT_SECRET });
 
   // If no token and accessing a protected route, redirect to sign-in
   if (!token) {

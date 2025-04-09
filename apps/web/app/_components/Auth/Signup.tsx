@@ -7,6 +7,8 @@ import Link from "next/link";
 import { styles } from "../../../styles/shared";
 import { useRouter } from "next/navigation";
 import { useUser } from "../../../provider/UserProvider";
+import { signIn } from "next-auth/react";
+import { toast } from "@/hooks/use-toast";
 
 function Signup() {
   const { setUser } = useUser();
@@ -18,23 +20,78 @@ function Signup() {
   const [error, setError] = useState("");
   const router = useRouter();
 
+  const validateForm = () => {
+    const { username, email, password } = userData;
+
+    if (!username || !email || !password) {
+      setError("All fields are required.");
+      return false;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email address.");
+      return false;
+    }
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters long.");
+      return false;
+    }
+
+    setError(""); // Clear any existing errors
+    return true;
+  };
+
   const handleOnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setUserData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setUserData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (userData.username && userData.email && userData.password) {
+
+    if (!validateForm()) return;
+
+    try {
       const res = await createUser(userData);
-      localStorage.setItem("token", res.data?.token);
-      setUser(res.data?.token);
-      router.push("/join-room");
-    } else {
-      setError("Please fill in all fields");
+
+      if (!res.success) {
+        toast({
+          title: "Sign up failed",
+          description: res.message || "Please try again later",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const result = await signIn("credentials", {
+        email: userData.username, // double-check this — should this be `email` instead?
+        password: userData.password,
+        redirect: false,
+      });
+
+      if (result?.ok) {
+        toast({
+          title: "Welcome!",
+          description: "Account created successfully",
+        });
+        router.push("/join-room");
+      } else {
+        toast({
+          title: "Login failed",
+          description: "Signup succeeded but auto-login failed. Please try manually.",
+          variant: "destructive",
+        });
+        router.push("/sign-in");
+      }
+    } catch (err) {
+      console.error("Signup error:", err);
+      toast({
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -57,7 +114,7 @@ function Signup() {
           <div className={`${styles.card} p-8 space-y-6`}>
             <form onSubmit={handleSignUp} className="space-y-6">
               <div>
-                <label htmlFor="name" className={styles.inputLabel}>
+                <label htmlFor="username" className={styles.inputLabel}>
                   Username
                 </label>
                 <input
@@ -101,29 +158,16 @@ function Signup() {
                 />
               </div>
 
-              {error && <div className={styles.error}>{error}</div>}
+              {error && (
+                <div className={`${styles.error} text-red-500 text-sm`}>
+                  {error}
+                </div>
+              )}
 
               <button type="submit" className={styles.button.primary}>
                 Create Account
               </button>
             </form>
-
-            {/* <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">
-                  Or continue with
-                </span>
-              </div>
-            </div>
-
-            <button className={styles.button.secondary}>
-              <span className="flex items-center justify-center gap-2">
-                Continue with Google
-              </span>
-            </button> */}
 
             <p className="text-center text-sm text-gray-600">
               Already have an account?{" "}

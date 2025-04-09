@@ -1,48 +1,79 @@
 "use client";
 
-import React, { useState } from "react";
-import { SigninAction } from "../../../actions";
-import { useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { Loader2, Paintbrush, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { styles } from "../../../styles/shared";
-import { useUser } from "../../../provider/UserProvider";
+import { toast } from "@/hooks/use-toast";
 
-function Signin() {
-  const { user, setUser } = useUser();
-  const [isLoading, setIsLoading] = useState(false);
+function SigninPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/";
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
   const [userData, setUserData] = useState({
-    username: "",
+    email: "",
     password: "",
   });
-  const [error, setError] = useState("");
 
   const handleOnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setUserData((prev) => {
-      return {
-        ...prev,
-        [name]: value,
-      };
-    });
+    setUserData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
+
+  useEffect(() => {
+    const error = searchParams.get("error");
+    if (error) {
+      setError(decodeURIComponent(error));
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (userData.username && userData.password) {
-      setIsLoading(true);
-      const res = await SigninAction(userData);
-      console.log(res, "res");
-      if (res) {
-        localStorage.setItem("token", res.token);
-        setUser({ token: res.token, ...res.user });
-        router.push("/");
-      }
-    } else {
-      setIsLoading(false);
-      setError("Please fill in all fields");
+
+    // Client-side validation
+    if (!userData.email || !userData.password) {
+      setError("Please fill in both fields.");
+      return;
     }
+
+    setError("");
+    setIsLoading(true);
+
+    const result = await signIn("credentials", {
+      email: userData.email,
+      password: userData.password,
+      redirect: false,
+    });
+
+    setIsLoading(false);
+
+    if (result?.error) {
+      console.log(result.error, "Sign-in error");
+
+      toast({
+        title: "Sign-in failed",
+        description: "Invalid email or password",
+        variant: "destructive",
+      });
+      setError("Invalid credentials");
+      return;
+    }
+
+    // Success
+    toast({
+      title: "Signed in successfully",
+    });
+
+    router.push(callbackUrl);
+    router.refresh();
   };
 
   return (
@@ -62,17 +93,17 @@ function Signin() {
           <div className={`${styles.card} p-8 space-y-6`}>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label htmlFor="username" className={styles.inputLabel}>
-                  Username
+                <label htmlFor="email" className={styles.inputLabel}>
+                  Email
                 </label>
                 <input
-                  id="username"
+                  id="email"
                   type="text"
-                  name="username"
-                  value={userData.username}
+                  name="email"
+                  value={userData.email}
                   onChange={handleOnChange}
                   className={styles.input}
-                  placeholder="Faisal"
+                  placeholder="biddafaisal@gmail.com"
                 />
               </div>
 
@@ -101,23 +132,6 @@ function Signin() {
                 )}
               </button>
             </form>
-            {/* 
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">
-                  Or continue with
-                </span>
-              </div>
-            </div>
-
-            <button className={styles.button.secondary}>
-              <span className="flex items-center justify-center gap-2">
-                Continue with Google
-              </span>
-            </button> */}
 
             <p className="text-center text-sm text-gray-600">
               Don't have an account?{" "}
@@ -127,26 +141,18 @@ function Signin() {
             </p>
           </div>
 
-          {/* Features Preview */}
+          {/* Features */}
           <div className="mt-8 grid grid-cols-2 gap-4">
-            <div className="p-4 rounded-xl bg-white/50 backdrop-blur-sm border border-white/20">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-4 h-4 text-purple-600" />
-                <h3 className="font-medium">Real-time Drawing</h3>
-              </div>
-              <p className="text-sm text-gray-600">
-                Draw and collaborate with others in real-time
-              </p>
-            </div>
-            <div className="p-4 rounded-xl bg-white/50 backdrop-blur-sm border border-white/20">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-4 h-4 text-purple-600" />
-                <h3 className="font-medium">Multiple Rooms</h3>
-              </div>
-              <p className="text-sm text-gray-600">
-                Join different rooms for various projects
-              </p>
-            </div>
+            <Feature
+              icon={<Sparkles className="w-4 h-4 text-purple-600" />}
+              title="Real-time Drawing"
+              desc="Draw and collaborate with others in real-time"
+            />
+            <Feature
+              icon={<Sparkles className="w-4 h-4 text-purple-600" />}
+              title="Multiple Rooms"
+              desc="Join different rooms for various projects"
+            />
           </div>
         </div>
       </div>
@@ -154,4 +160,22 @@ function Signin() {
   );
 }
 
-export default Signin;
+const Feature = ({
+  icon,
+  title,
+  desc,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+}) => (
+  <div className="p-4 rounded-xl bg-white/50 backdrop-blur-sm border border-white/20">
+    <div className="flex items-center gap-2 mb-2">
+      {icon}
+      <h3 className="font-medium">{title}</h3>
+    </div>
+    <p className="text-sm text-gray-600">{desc}</p>
+  </div>
+);
+
+export default SigninPage;

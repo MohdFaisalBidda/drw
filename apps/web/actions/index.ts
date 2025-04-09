@@ -1,6 +1,8 @@
 "use server"
 
+import { prisma } from "@repo/db/prisma";
 import { cookies } from "next/headers";
+import bcrypt from "bcrypt";
 
 export interface ICreateRoom {
     user: any
@@ -15,38 +17,27 @@ export interface ICreateUser {
 
 export const createUser = async ({ username, email, password }: ICreateUser) => {
     try {
-        const createdUser = await fetch(`http://localhost:8000/api/auth/signup`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                username,
+        const hashedPass = await bcrypt.hash(password, 10);
+        const user = await prisma.user.create({
+            data: {
                 email,
-                password
-            })
+                password: hashedPass,
+                username,
+                name: username,
+            }
         })
 
-        const createdUserData = await createdUser.json()
-
-        if (!createdUserData.success) {
+        if (!user) {
             return {
                 success: false,
-                error: createdUserData.error
+                error: "User already exists"
             }
         }
 
-        const token = await SigninAction({ username: createdUserData.data.username, password: createdUserData.data.password });
-
-        ((await cookies()).set("token", token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            path: "/",
-        }))
         return {
             success: true,
             data: {
-                token
+                user
             }
         }
     } catch (error) {
@@ -124,7 +115,7 @@ export const createRoom = async ({ slug, user }: ICreateRoom) => {
         return {
             success: true,
             data: {
-                roomData:roomData.room
+                roomData: roomData.room
             }
         };
     } catch (error) {
