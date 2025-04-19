@@ -132,7 +132,7 @@ export class Draw {
 
   private async fetchExistingShapes(): Promise<{ id: Record<string, string>, message: Shape[] }> {
     try {
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_NEXT_PUBLIC_HTTP_URL}/api/room/${this.roomId}/shapes`);
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_HTTP_URL}/api/room/${this.roomId}/shapes`);
       const message: Shape[] = [];
       const idMap: Record<string, string> = {};
 

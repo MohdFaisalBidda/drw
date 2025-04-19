@@ -3,18 +3,20 @@ import { getAllRooms } from "../actions";
 import JoinRoomPage from "./_components/JoinRoom";
 import { redirect } from "next/navigation";
 import Header from "./_components/Header";
+import { getServerSession } from "next-auth";
 
 export default async function Home() {
-  // const token = (await cookies()).get("token")?.value;
-  // console.log(token, "token in home");
+  const session = await getServerSession();
+  console.log(session?.accessToken, "token in home");
 
-  // if (!token) {
-  //   redirect("/sign-in");
-  // }
+  if (!session?.user) {
+    redirect("/sign-in");
+  }
 
   const allRooms = await getAllRooms();
   return (
     <>
+      <Header />
       <JoinRoomPage allRooms={allRooms.data?.rooms} />
     </>
   );

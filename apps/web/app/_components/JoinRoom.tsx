@@ -13,7 +13,6 @@ export default function JoinRoomPage({ allRooms }: { allRooms: any }) {
   const router = useRouter();
   const { user } = useUser();
 
-
   const handleJoinRoom = async () => {
     if (!roomId.trim()) {
       setError("Please enter a valid Room ID");

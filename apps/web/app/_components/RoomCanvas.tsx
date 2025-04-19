@@ -42,7 +42,7 @@ function RoomCanvas({ roomId }: { roomId: string }) {
 
       try {
         const token = localStorage.getItem("token");
-        const wsUrl = `${process.env.NEXT_PUBLIC_NEXT_PUBLIC_WS_URL}?token=${token}`;
+        const wsUrl = `${process.env.NEXT_PUBLIC_WS_URL}?token=${token}`;
         console.log("Attempting to connect to:", wsUrl);
 
         ws = new WebSocket(wsUrl);

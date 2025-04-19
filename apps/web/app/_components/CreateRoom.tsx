@@ -12,6 +12,7 @@ import {
 import Link from "next/link";
 import { createRoom } from "../../actions";
 import { useUser } from "../../provider/UserProvider";
+import axios from "axios";
 
 export default function CreateRoomPage() {
   const [roomName, setRoomName] = useState("");
@@ -34,10 +35,11 @@ export default function CreateRoomPage() {
 
     try {
       console.log(user, "user in createRoom");
-
-      const res = await createRoom({ slug: roomName, user });
+      const res = await axios.post("/api/room", {
+        slug: roomName,
+        adminId: user.id,
+      });
       console.log(res, "res in createRoom");
-
       const roomId = res.data?.roomData.id;
       router.push(`/draw/${roomId}`);
     } catch (error) {
