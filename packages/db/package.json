@@ -5,7 +5,8 @@
   "main": "index.js",
   "exports": {
     "./prisma": "./dist/index.js",
-    "./schema": "./src/schema.ts"
+    "./schema": "./src/schema.ts",
+    ".": "./dist/index.js"
   },
   "scripts": {
     "build": "tsc -b",

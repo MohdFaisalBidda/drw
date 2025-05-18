@@ -1,6 +1,6 @@
 "use server"
 
-import { prisma } from "@repo/db/prisma";
+import { prisma } from "@repo/db";
 import { cookies } from "next/headers";
 import bcrypt from "bcrypt";
 import { getServerSession } from "next-auth";

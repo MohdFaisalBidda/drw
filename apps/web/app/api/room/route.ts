@@ -1,5 +1,5 @@
 import authenticate from "@/lib/authenticate";
-import { prisma } from "@repo/db/prisma";
+import { prisma } from "@repo/db";
 import { NextRequest, NextResponse } from "next/server";
 
 

@@ -1,5 +1,5 @@
 import { WebSocketServer, WebSocket } from 'ws';
-import { prisma } from '@repo/db/prisma';
+import { prisma } from '@repo/db';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 
 interface Client extends WebSocket {

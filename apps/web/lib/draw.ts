@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 import { SelectionManager } from './selectionManager';
 import { eraseShape } from './eraser';
-import { prisma } from '@repo/db/prisma';
+import { prisma } from '@repo/db';
 import { getAllShapes } from '@/actions';
 
 export type Tool = 'rect' | 'circle' | 'pencil' | 'line' | 'text' | 'arrow' | 'diamond' | 'draw' | 'eraser' | 'select' | 'camera' | 'iframe';
