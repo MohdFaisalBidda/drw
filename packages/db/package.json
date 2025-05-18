@@ -10,7 +10,8 @@
   "scripts": {
     "build": "tsc -b",
     "start": "tsx ./src/index.ts",
-    "dev": "npm run build && tsx ./src/index.ts"
+    "dev": "npm run build && tsx ./src/index.ts",
+    "generate": "prisma generate"
   },
   "devDependencies": {
     "@repo/typescript-config": "*",

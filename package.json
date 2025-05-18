@@ -10,7 +10,8 @@
     "db:generate": "npx -w @exceli-draw/db prisma generate",
     "start:web": "npx -w @exceli-draw/web dev",
     "start:backend": "npx -w @exceli-draw/http-backend dev",
-    "start:websocket": "npx -w @exceli-draw/ws-backend dev"
+    "start:websocket": "npx -w @exceli-draw/ws-backend dev",
+    "postinstall": "npm run generate -w @repo/db"
   },
   "exports": {
     "backend-common": "./packages/backend-common",
