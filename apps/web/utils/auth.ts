@@ -3,7 +3,6 @@ import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from '@repo/db'
 import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken"
 
 export const authOptions: NextAuthOptions = {
     adapter: PrismaAdapter(prisma),
