@@ -11,7 +11,7 @@
     "start:web": "npx -w @exceli-draw/web dev",
     "start:backend": "npx -w @exceli-draw/http-backend dev",
     "start:websocket": "npx -w @exceli-draw/ws-backend dev",
-    "postinstall": "npm run generate -w @repo/db",
+    "postinstall": "turbo run build --filter=@repo/db",
     "debug:vercel": "ls -la node_modules/@repo/db && prisma -v"
   },
   "exports": {

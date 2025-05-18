@@ -12,7 +12,8 @@
     "build": "tsc -b",
     "start": "tsx ./src/index.ts",
     "dev": "npm run build && tsx ./src/index.ts",
-    "generate": "prisma generate"
+    "generate": "prisma generate",
+     "postinstall": "prisma generate"
   },
   "devDependencies": {
     "@repo/typescript-config": "*",
