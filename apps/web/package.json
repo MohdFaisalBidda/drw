@@ -8,9 +8,10 @@
     "build": "next build",
     "start": "next start",
     "db:generate": "npx prisma generate && npx prisma migrate dev",
-    "vercel-build": "npm install -w @repo/db && npm run generate -w @repo/db && next build",
     "lint": "next lint --max-warnings 0",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "postinstall": "npm run generate -w @repo/db",
+    "vercel-build": "next build"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.8.0",
