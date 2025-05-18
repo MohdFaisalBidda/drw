@@ -3,6 +3,7 @@
 import { prisma } from "@repo/db/prisma";
 import { cookies } from "next/headers";
 import bcrypt from "bcrypt";
+import { getServerSession } from "next-auth";
 
 export interface ICreateRoom {
     user: any
@@ -130,21 +131,34 @@ export const createRoom = async ({ slug, user }: ICreateRoom) => {
 
 
 export const getAllRooms = async () => {
+    const session = await getServerSession()
+    if (!session?.user) {
+        return {
+            success: false,
+            error: "Unauthorized"
+        }
+    }
+
     try {
-        const rooms = await fetch(`http://localhost:8000/api/room`, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-            },
+        // const rooms = await fetch(`http://localhost:8000/api/room`, {
+        //     method: "GET",
+        //     headers: {
+        //         "Content-Type": "application/json",
+        //     },
+        // })
+
+        // const roomsData = await rooms.json()
+        // console.log(roomsData, "roomsData herer");
+
+        const rooms = await prisma.room.findMany({
+            where: {
+                adminId: session.user.id
+            }
         })
-
-        const roomsData = await rooms.json()
-        console.log(roomsData, "roomsData herer");
-
         return {
             success: true,
             data: {
-                rooms: roomsData.rooms
+                rooms
             }
         }
     } catch (error) {
@@ -156,3 +170,17 @@ export const getAllRooms = async () => {
 
     }
 }
+
+export const getAllShapes = async (roomId: string) => {
+    try {
+        const shapes = prisma.shape.findMany({
+            where: {
+                roomId
+            }
+        })
+        return shapes
+    } catch (error) {
+        console.log(error);
+        return []
+    }
+}    

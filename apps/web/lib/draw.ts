@@ -2,8 +2,10 @@ import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 import { SelectionManager } from './selectionManager';
 import { eraseShape } from './eraser';
+import { prisma } from '@repo/db/prisma';
+import { getAllShapes } from '@/actions';
 
-export type Tool = 'rect' | 'circle' | 'pencil' | 'line' | 'text' | 'arrow' | 'diamond' | 'draw' | 'eraser' | 'select';
+export type Tool = 'rect' | 'circle' | 'pencil' | 'line' | 'text' | 'arrow' | 'diamond' | 'draw' | 'eraser' | 'select' | 'camera' | 'iframe';
 
 export interface Shape {
   id: string;
@@ -23,6 +25,8 @@ export interface Shape {
   strokeWidth: number;
   strokeStyle: string;
   opacity: number;
+
+  url?: string;
 }
 
 export class Draw {
@@ -30,7 +34,7 @@ export class Draw {
   private ctx: CanvasRenderingContext2D;
   private socket: WebSocket;
   private roomId: string;
-  private shapes: Shape[] = [];
+  public shapes: Shape[] = [];
   private isDrawing = false;
   private startX: number = 0;
   private startY: number = 0;
@@ -132,11 +136,12 @@ export class Draw {
 
   private async fetchExistingShapes(): Promise<{ id: Record<string, string>, message: Shape[] }> {
     try {
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_HTTP_URL}/api/room/${this.roomId}/shapes`);
+      // const response = await axios.get(`${process.env.NEXT_PUBLIC_HTTP_URL}/api/room/${this.roomId}/shapes`);
+      const fetchedShapes = await getAllShapes(this.roomId);
       const message: Shape[] = [];
       const idMap: Record<string, string> = {};
 
-      response.data.shapes.forEach((x: { id: string, message: string }, index: number) => {
+      fetchedShapes.forEach((x: { id: string, message: string }, index: number) => {
         try {
           const parsedMessage = JSON.parse(x.message);
           // parsedMessage.id = x.id;
@@ -275,9 +280,14 @@ export class Draw {
         const handle = this.selectionManager.getResizeHandleAtPoint(point.x, point.y, bounds)
 
         this.canvas.style.cursor = handle?.cursor || 'auto'
+        if (this.selectedShape.type === "iframe") {
+          this.selectedShape.width = Math.abs(point.x - this.selectedShape.x);
+          this.selectedShape.height = Math.abs(point.y - this.selectedShape.y);
+        }
       }
       return
     }
+
 
     if (this.isDrawing) {
       if (this.currentTool === "pencil") {
@@ -351,12 +361,27 @@ export class Draw {
   };
 
   private async sendShapeToServer(shape: Shape) {
-    this.socket.send(
-      JSON.stringify({
-        type: 'NEW_MESSAGE',
-        payload: { message: JSON.stringify(shape), roomId: this.roomId },
-      })
-    );
+    console.log(this.socket, this.socket.OPEN, "this.socket.OPEN in sendShapeToServer");
+
+    if (this.socket.OPEN) {
+      this.socket.send(
+        JSON.stringify({
+          type: 'NEW_MESSAGE',
+          payload: { message: JSON.stringify(shape), roomId: this.roomId },
+        })
+      );
+    } else {
+      console.log("Socket not ready");
+      // Handle reconnection logic here
+      this.socket.addEventListener("open", () => {
+        this.socket.send(
+          JSON.stringify({
+            type: 'NEW_MESSAGE',
+            payload: { message: JSON.stringify(shape), roomId: this.roomId },
+          })
+        );
+      });
+    }
   }
 
   private sendShapeUpdateToServer(shape: Shape, shapeId: string) {
@@ -511,6 +536,19 @@ export class Draw {
         this.ctx.stroke();
         break;
 
+      case "iframe":
+        this.ctx.fillRect(shape.x, shape.y, shape.width || 0, shape.height || 0);
+        this.ctx.strokeRect(shape.x, shape.y, shape.width || 0, shape.height || 0);
+        // Draw URL text
+        this.ctx.fillStyle = 'white';
+        this.ctx.font = '12px Arial';
+        this.ctx.fillText(
+          shape.url || 'No URL provided',
+          shape.x + 5,
+          shape.y + 15
+        );
+        break
+
       default:
         break;
     }
@@ -552,6 +590,12 @@ export class Draw {
         const metrics = this.ctx.measureText(shape.text || "");
         return x >= shape.x && x <= shape.x + metrics.width &&
           y >= shape.y - 24 && y <= shape.y;
+
+      case "iframe":
+        return x >= shape.x &&
+          x <= shape.x + (shape.width || 0) &&
+          y >= shape.y &&
+          y <= shape.y + (shape.height || 0);
 
       default:
         return false;

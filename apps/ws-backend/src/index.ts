@@ -1,7 +1,6 @@
-import jwt, { JwtPayload } from 'jsonwebtoken';
 import { WebSocketServer, WebSocket } from 'ws';
-import { JWT_SECRET } from '@repo/backend-common/config';
 import { prisma } from '@repo/db/prisma';
+import jwt, { JwtPayload } from 'jsonwebtoken';
 
 interface Client extends WebSocket {
   userId?: string,
@@ -18,43 +17,69 @@ interface Room {
 const wss = new WebSocketServer({ port: 8080 });
 const rooms: Record<string, Room> = {};
 
+// Heartbeat interval
 const interval = setInterval(() => {
   wss.clients.forEach((ws: any) => {
     if (ws.isAlive === false) {
-      return ws.terminate()
+      console.log(`Terminating inactive connection ${ws.userId}`);
+      return ws.terminate();
     }
-    ws.isAlive = false
-    ws.ping()
-  })
-}, 30000)
+    ws.isAlive = false;
+    ws.ping();
+  });
+}, 30000);
 
-wss.on('connection', (ws: Client, req) => {
-  ws.on('error', console.error);
+wss.on('connection', async (ws: Client, req) => {
+  ws.isAlive = true;
+
+  // Setup heartbeat pong handler
+  ws.on('pong', () => {
+    ws.isAlive = true;
+  });
+
+  ws.on('error', (error) => {
+    console.error('WebSocket error:', error);
+    ws.terminate();
+  });
+
   console.log('Client connected');
 
   const url = req.url;
   if (!url) {
-    ws.close();
-    return
+    console.log('No URL provided');
+    ws.close(4001, 'No URL provided');
+    return;
   }
 
   const queryParams = new URLSearchParams(url.split('?')[1]);
   const token = queryParams.get('token') || "";
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
-    if (!decoded || !decoded.userId) {
-      ws.close();
-      return
+    console.log(url, token, "token in ws");
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
+    if (typeof decoded == "string") {
+      console.error("Decoded token is a string, expected object");
+      return null;
+    }
+    if (!decoded.id) {
+      console.error("No valid user ID in token");
+      return null;
     }
 
-    ws.userId = decoded.userId;
-    ws.name = decoded.name;
+    console.log(decoded, "decoded in ws");
+    ws.userId = decoded.id as string;
+    ws.name = decoded.name as string;
   } catch (error) {
-    ws.close();
-    return
+    console.error('JWT verification failed:', {
+      error,
+      token: token.substring(0, 10) + '...', // Log first part for debugging
+      tokenLength: token.length
+    });
+    console.log('JWT verification failed:', error);
+    ws.close(4003, 'Authentication failed');
+    return;
   }
-
 
   ws.on('message', async (data) => {
     try {
@@ -62,59 +87,44 @@ wss.on('connection', (ws: Client, req) => {
       const { type, payload } = parsedData;
 
       switch (type) {
-        case 'JOIN_ROOM': {
-          const { roomId } = payload;
-          await joinRoom(ws, roomId);
-          break
-        }
-
-        case
-          'LEAVE_ROOM': {
-            leaveRoom(ws);
-            break;
-          }
-
-        case 'NEW_MESSAGE': {
-          const { message, roomId } = payload;
-          console.log(message, "message here in NEW_MESSAGE");
-          await broadcastMessage(ws, message, roomId);
+        case 'JOIN_ROOM':
+          await joinRoom(ws, payload.roomId);
           break;
-        }
-
-        case 'UPDATE_SHAPE': {
-          const { message, roomId, shapeId } = payload;
-          await updateShape(ws, message, shapeId, roomId);
+        case 'LEAVE_ROOM':
+          await leaveRoom(ws);
           break;
-        }
-
-        case "DELETE_SHAPE": {
-          const { shapeId, roomId } = payload;
-          console.log(shapeId, "shapeId in DELETE_SHAPE");
-          await deleteShape(ws, shapeId, roomId);
+        case 'NEW_MESSAGE':
+          await broadcastMessage(ws, payload.message, payload.roomId);
           break;
-        }
-
+        case 'UPDATE_SHAPE':
+          await updateShape(ws, payload.message, payload.shapeId, payload.roomId);
+          break;
+        case 'DELETE_SHAPE':
+          await deleteShape(ws, payload.shapeId, payload.roomId);
+          break;
         default:
           console.log("Unknown message type received", type);
           break;
-
       }
     } catch (error) {
-      console.log(error, "Invalid message format received", error);
+      console.log("Invalid message format received", error);
+      ws.send(JSON.stringify({
+        type: 'ERROR',
+        payload: { message: 'Invalid message format' }
+      }));
     }
   });
 
-  ws.on('close', (error) => {
-    console.log('Connection closed', error);
-    clearInterval(interval)
+  ws.on('close', () => {
+    console.log(`Client ${ws.userId} disconnected`);
+    leaveRoom(ws);
   });
-
-  wss.on('close', () => {
-    clearInterval(interval)
-  })
-
 });
 
+// Clean up interval when server closes
+wss.on('close', () => {
+  clearInterval(interval);
+});
 
 async function joinRoom(ws: Client, roomId: string) {
   if (!rooms[roomId]) {
@@ -246,7 +256,7 @@ async function broadcastMessage(ws: Client, message: string, roomId: string) {
   })
 
   console.log(savedShape.id, "savedShape.id in broadcastMessage");
-  
+
   const updateMessageShapeId = await prisma.shape.update({
     where: {
       id: savedShape.id

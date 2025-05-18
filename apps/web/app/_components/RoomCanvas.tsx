@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import Canvas from "./Canvas";
+import { useSession } from "next-auth/react";
 
 // WebSocket close codes and their meanings
 const WS_CLOSE_CODES = {
@@ -24,6 +25,7 @@ const WS_CLOSE_CODES = {
 };
 
 function RoomCanvas({ roomId }: { roomId: string }) {
+  const { data: session } = useSession();
   const [socket, setSocket] = useState<WebSocket>();
   const [isConnecting, setIsConnecting] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,8 +43,8 @@ function RoomCanvas({ roomId }: { roomId: string }) {
       }
 
       try {
-        const token = localStorage.getItem("token");
-        const wsUrl = `${process.env.NEXT_PUBLIC_WS_URL}?token=${token}`;
+        // const token = localStorage.getItem("token");
+        const wsUrl = `${process.env.NEXT_PUBLIC_WS_URL}?token=${session?.accessToken}`;
         console.log("Attempting to connect to:", wsUrl);
 
         ws = new WebSocket(wsUrl);
@@ -68,8 +70,7 @@ function RoomCanvas({ roomId }: { roomId: string }) {
 
         ws.addEventListener("message", (e) => {
           const message = JSON.parse(e.data);
-          console.log(message,"message in ws addEventlistenere");
-          
+          console.log(message, "message in ws addEventlistenere");
         });
 
         ws.addEventListener("close", (event) => {

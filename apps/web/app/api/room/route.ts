@@ -1,11 +1,40 @@
 import authenticate from "@/lib/authenticate";
 import { prisma } from "@repo/db/prisma";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function POST(req: NextResponse) {
+
+export async function GET(req: NextRequest) {
     const session = await authenticate();
-    console.log(session,"sessoin in post");
-    
+    if (!session) {
+        return NextResponse.json({
+            message: "Unauthorized",
+            status: 401,
+        });
+    }
+
+    const { slug } = await req.json();
+    const room = await prisma.room.findUnique({
+        where: {
+            slug,
+        },
+    });
+
+    if (!room) {
+        return NextResponse.json({
+            roomData: null,
+            status: "error",
+        });
+    }
+    return NextResponse.json({
+        roomData: room,
+        status: "success",
+    });
+}
+
+export async function POST(req: NextRequest) {
+    const session = await authenticate();
+    console.log(session, "sessoin in post");
+
     if (!session?.user) {
         return new Response("Unauthorized", { status: 401 });
     }
@@ -17,28 +46,6 @@ export async function POST(req: NextResponse) {
             adminId,
         },
     });
-    return NextResponse.json({
-        roomData: room,
-        status: "success",
-    });
-}
-
-export async function GET(req: NextResponse) {
-    const session = await authenticate();
-    if (!session) {
-        return new Response("Unauthorized", { status: 401 });
-    }
-
-    const { slug } = await req.json();
-    const room = await prisma.room.findUnique({
-        where: {
-            slug,
-        },
-    });
-
-    if (!room) {
-        return new Response("Room not found", { status: 404 });
-    }
     return NextResponse.json({
         roomData: room,
         status: "success",

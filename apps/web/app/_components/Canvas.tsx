@@ -5,8 +5,11 @@ import { Draw, Shape, Tool } from "../../lib/draw";
 import Toolbar from "./Toolbar";
 import { Camera, Loader2, Minus, Plus, PowerOff, Sparkles } from "lucide-react";
 import { PropertiesPanel } from "./PropertiesPanel";
+import { useSession } from "next-auth/react";
 
 function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
+  console.log(socket?.OPEN, "socket in canvas");
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [draw, setDraw] = useState<Draw>();
   const [selectedTool, setSelectedTool] = useState<Tool | null>("rect");
@@ -26,7 +29,7 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
       const drawInstance = new Draw(
         canvasRef.current,
         roomId!,
-        socket!,
+        socket!
         // (text) => {
         //   console.log("setEditingText called with:", text);
         //   setEditingText(text);
@@ -128,8 +131,8 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const originalCanvas = canvas
-    const originalCtx =originalCanvas.getContext("2d");
+    const originalCanvas = canvas;
+    const originalCtx = originalCanvas.getContext("2d");
     if (!originalCtx) return;
 
     const screenShotCanvas = document.createElement("canvas");
@@ -155,10 +158,18 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
   return (
     <>
       <canvas ref={canvasRef} className="w-full h-full bg-black" />
-      <Toolbar selectedTool={selectedTool} setSelectedTool={setSelectedTool} />
+      <Toolbar
+        selectedTool={selectedTool}
+        setSelectedTool={setSelectedTool}
+        handleScreenshot={handleScreenshot}
+      />
 
       <div className="absolute top-5 left-2 w-auto">
-        <PropertiesPanel onUpdateShape={handleUpdateShape} draw={draw} />
+        <PropertiesPanel
+          onUpdateShape={handleUpdateShape}
+          draw={draw}
+          selectedTool={selectedTool}
+        />
       </div>
       <div className="absolute top-4 right-4 flex items-center gap-4">
         <div className="bg-black/30 backdrop-blur-sm rounded-lg border border-white/10 p-3 shadow-lg">
@@ -266,18 +277,30 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
           />
         </div>
       )}
+      {draw?.shapes.map((shape) => {
+        if (shape.type === "iframe" && shape.url) {
+          return (
+            <iframe
+              key={shape.id}
+              src={shape.url}
+              className="absolute"
+              style={{
+                left: shape.x * scale + draw.transform.offsetX,
+                top: shape.y * scale + draw.transform.offsetY,
+                width: (shape.width || 0) * scale,
+                height: (shape.height || 0) * scale,
+                pointerEvents: selectedTool === "iframe" ? "none" : "auto",
+              }}
+            />
+          );
+        }
+        return null;
+      })}
       <div
         className="absolute bottom-5 right-5 flex items-center gap-2 
                     bg-black/30 backdrop-blur-sm rounded-lg 
                     border border-white/10 p-2 text-white"
       >
-        <button
-          onClick={handleScreenshot}
-          className="p-1 hover:bg-white/10 rounded transition-colors"
-          title="Take screenshot"
-        >
-          <Camera className="w-4 h-4" />
-        </button>
         <button
           onClick={() =>
             draw?.zoomOut((newScale: number) => setScale(newScale))

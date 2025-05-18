@@ -68,13 +68,8 @@ export const authOptions: NextAuthOptions = {
             if (user && "id" in user) {
                 token.id = user.id
                 token.email = user.email
+                token.name = user.name
             }
-
-            if (!process.env.NEXTAUTH_SECRET) {
-                throw new Error("JWT_SECRET is not set")
-            }
-
-            token.accessToken = jwt.sign({ id: token.id, email: token.email }, process.env.NEXTAUTH_SECRET, { expiresIn: "7d" })
 
             return token
         },
@@ -83,11 +78,11 @@ export const authOptions: NextAuthOptions = {
             if (token && session.user) {
                 session.user.id = token.id as string,
                     session.user.email = token.email as string,
-                    session.accessToken = token.accessToken as string
+                session.user.name = token.name as string
             }
             return session
         },
     },
-    secret: process.env.NEXTAUTH_SECRET,
-    debug: process.env.NODE_ENV === 'development' 
+    secret: process.env.JWT_SECRET,
+    debug: process.env.NODE_ENV === 'development'
 }

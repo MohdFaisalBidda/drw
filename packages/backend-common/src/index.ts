@@ -1,1 +1,4 @@
-export const JWT_SECRET = process.env.JWT_SECRET || '...secret';
+export const NEXTAUTH_SECRET = {
+    secret: process.env.NEXTAUTH_SECRET || 'your-strong-secret-here',
+    expiresIn: '7d'
+  };

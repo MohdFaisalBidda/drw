@@ -14,8 +14,10 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (status === "authenticated" && session?.user) {
-      setUser(session.user); // ✅ only store the user object
     }
+    console.log(session?.user, "session.user in useEffect");
+    
+    setUser(session?.user); // ✅ only store the user object
   }, [session, status]);
 
   return (

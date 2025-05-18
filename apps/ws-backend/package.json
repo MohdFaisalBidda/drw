@@ -8,17 +8,18 @@
     "build": "tsc -b",
     "start": "node ./dist/index.js",
     "dev": "npm run build && node ./dist/index.js",
-    "db:generate":"cd packages/db && npx prisma generate",
-    "start:websocket":"cd apps/ws-backend && npm run dev"
+    "db:generate": "cd packages/db && npx prisma generate",
+    "start:websocket": "cd apps/ws-backend && npm run dev"
   },
   "dependencies": {
+    "jose": "^6.0.10",
     "jsonwebtoken": "^9.0.2",
     "ws": "^8.18.0"
   },
   "devDependencies": {
-    "@repo/frontend": "*",
-    "@repo/db": "*",
     "@repo/backend-common": "*",
+    "@repo/db": "*",
+    "@repo/frontend": "*",
     "@repo/typescript-config": "*",
     "@types/jsonwebtoken": "^9.0.7",
     "@types/ws": "^8.5.13"

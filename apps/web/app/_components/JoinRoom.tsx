@@ -6,6 +6,7 @@ import { styles } from "../../styles/shared";
 import { Paintbrush, Plus } from "lucide-react";
 import Link from "next/link";
 import { useUser } from "../../provider/UserProvider";
+import { getToken } from "next-auth/jwt";
 
 export default function JoinRoomPage({ allRooms }: { allRooms: any }) {
   const [roomId, setRoomId] = useState("");

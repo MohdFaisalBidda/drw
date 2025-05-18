@@ -1,7 +1,6 @@
-import { PageProps } from "../../../.next/types/app/draw/[roomId]/page";
 import RoomCanvas from "../../_components/RoomCanvas";
 
-export default async function CanvasPage({ params }: PageProps) {
+export default async function CanvasPage({ params }: { params: any }) {
   const roomId = (await params).roomId;
 
   return <RoomCanvas roomId={roomId} />;

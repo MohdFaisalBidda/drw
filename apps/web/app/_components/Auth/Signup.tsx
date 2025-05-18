@@ -59,7 +59,7 @@ function Signup() {
       if (!res.success) {
         toast({
           title: "Sign up failed",
-          description: res.message || "Please try again later",
+          description: "Please try again later",
           variant: "destructive",
         });
         return;

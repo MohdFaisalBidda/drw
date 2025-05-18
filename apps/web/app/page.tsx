@@ -3,15 +3,16 @@ import { getAllRooms } from "../actions";
 import JoinRoomPage from "./_components/JoinRoom";
 import { redirect } from "next/navigation";
 import Header from "./_components/Header";
-import { getServerSession } from "next-auth";
+import { getSession } from "next-auth/react";
+import authenticate from "@/lib/authenticate";
 
 export default async function Home() {
-  const session = await getServerSession();
-  console.log(session?.accessToken, "token in home");
-
-  if (!session?.user) {
-    redirect("/sign-in");
-  }
+  const session = await authenticate();
+  console.log(session,"session in home");
+  
+  // if (!session?.user) {
+  //   redirect("/sign-in");
+  // }
 
   const allRooms = await getAllRooms();
   return (
