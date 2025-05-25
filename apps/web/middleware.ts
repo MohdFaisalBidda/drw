@@ -37,4 +37,5 @@ export async function middleware(req: NextRequest) {
 // Apply middleware to protected routes
 export const config = {
   matcher: ["/", "/draw/:path*", "/create-room", "/sign-in", "/sign-up"], // Apply to these routes
+  runtime: "nodejs",
 };
