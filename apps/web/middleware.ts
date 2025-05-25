@@ -5,7 +5,7 @@ import type { NextRequest } from "next/server";
 export async function middleware(req: NextRequest) {
   try {
     // Get token from cookies
-    const secret = process.env.JWT_SECRET!;
+    const secret = process.env.NEXT_PUBLIC_JWT_SECRET!;
     const token = await getToken({ req, secret: secret });
 
     // If no token and accessing a protected route, redirect to sign-in
@@ -37,5 +37,4 @@ export async function middleware(req: NextRequest) {
 // Apply middleware to protected routes
 export const config = {
   matcher: ["/", "/draw/:path*", "/create-room", "/sign-in", "/sign-up"], // Apply to these routes
-  runtime: "nodejs",
 };
