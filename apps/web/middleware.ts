@@ -2,12 +2,12 @@ import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+const secret = process.env.NEXTAUTH_SECRET!;
+
 export async function middleware(req: NextRequest) {
   try {
     // Get token from cookies
-    const secret = process.env.NEXTAUTH_SECRET!;
-    console.log(secret, "secret in middleware");
-    
+    console.log(secret, "secret in middleware");    
     const token = await getToken({ req, secret: secret });
 
     // If no token and accessing a protected route, redirect to sign-in
