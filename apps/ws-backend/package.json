@@ -10,7 +10,7 @@
     "db:generate": "cd ../../packages/db && npx prisma generate",
     "start:websocket": "cd apps/ws-backend && npm run dev",
     "render-build": "npm install --production && npm run build-deps && tsc -b",
-    "build-deps": "cd /opt/render/project/src/packages/db && npx prisma generate && npm run build",
+    "build-deps": "cd /opt/render/project/src/packages/db && npx prisma generate && cd ../../apps/ws-backend && npm run build",
     "start": "node ./dist/index.js"
   },
   "dependencies": {
