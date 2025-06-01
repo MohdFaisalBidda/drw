@@ -3,12 +3,12 @@
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "./dist",
-    "types": ["node"],
     "baseUrl": ".",
     "paths": {
-      "@repo/db": ["../../packages/db/src/index"],
+      "@repo/db": ["../../packages/db/src/*"],
       "@repo/db/*": ["../../packages/db/src/*"]
-    }
+    },
+    "types": ["node"],
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules"]
