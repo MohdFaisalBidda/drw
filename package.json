@@ -7,7 +7,7 @@
     "dev": "turbo dev",
     "lint": "turbo lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "db:generate": "npx -w @exceli-draw/db prisma generate",
+    "db:generate": "npx -w @repo/db prisma generate",
     "start:web": "npx -w @exceli-draw/web dev",
     "start:backend": "npx -w @exceli-draw/http-backend dev",
     "start:websocket": "npx -w @exceli-draw/ws-backend dev",
