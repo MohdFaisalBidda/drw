@@ -5,11 +5,12 @@
   "main": "index.js",
   "type": "commonjs",
   "scripts": {
-    "build": "npm run db:generate && tsc -b",
-    "dev": "npm run build && node ./dist/index.js",
-    "db:generate": "cd ../../packages/db && npx prisma generate",
-    "start:websocket": "cd apps/ws-backend && npm run dev",
-    "render-build": "npm install --ignore-scripts -w @repo/db && npm run db:generate && tsc -b"
+     "build": "npm run db:generate && tsc -b",
+  "dev": "npm run build && node ./dist/index.js",
+  "db:generate": "cd ../../packages/db && npx prisma generate",
+  "start:websocket": "cd apps/ws-backend && npm run dev",
+  "render-build": "npm install --ignore-scripts -w @repo/db && npm run db:generate && npm run build:db && tsc -b",
+  "build:db": "cd ../../packages/db && tsc -b"
   },
   "dependencies": {
     "jose": "^6.0.10",
