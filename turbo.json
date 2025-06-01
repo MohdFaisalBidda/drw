@@ -8,6 +8,10 @@
       "outputs": [".next/**", "!.next/cache/**"],
       "env": ["GEMINI_API_KEY"]
     },
+    "@repo/db#build": {
+      "outputs": ["dist/**", ".prisma/**", "node_modules/.prisma/**"],
+      "env": ["DATABASE_URL", "NEXTAUTH_SECRET"]
+    },
     "lint": {
       "dependsOn": ["^lint"]
     },
