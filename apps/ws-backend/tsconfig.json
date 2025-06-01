@@ -5,8 +5,8 @@
     "outDir": "./dist",
     "baseUrl": ".",
     "paths": {
-      "@repo/db": ["../../packages/db/src/*"],
-      "@repo/db/*": ["../../packages/db/src/*"]
+      "@repo/db": ["../../packages/db/dist/index"],
+      "@repo/db/*": ["../../packages/db/dist/*"]
     },
     "types": ["node"],
   },
