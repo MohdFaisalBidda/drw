@@ -16,11 +16,11 @@
   "dependencies": {
     "jose": "^6.0.10",
     "jsonwebtoken": "^9.0.2",
-    "ws": "^8.18.0"
+    "ws": "^8.18.0",
+    "@repo/db": "*"
   },
   "devDependencies": {
     "@repo/backend-common": "*",
-    "@repo/db": "*",
     "@repo/frontend": "*",
     "@repo/typescript-config": "*",
     "@types/jsonwebtoken": "^9.0.7",
