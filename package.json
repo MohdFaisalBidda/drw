@@ -11,9 +11,8 @@
     "start:web": "npx -w @exceli-draw/web dev",
     "start:backend": "npx -w @exceli-draw/http-backend dev",
     "start:websocket": "npx -w @exceli-draw/ws-backend dev",
-    "debug:vercel": "ls -la node_modules/@repo/db && prisma -v",
-    "render-build": "npm install --ignore-scripts && cd packages/db && npx prisma generate && npm run build && cd ../../apps/ws-backend && npm run build",
-    "postinstall": "if [ -z \"$SKIP_POSTINSTALL\" ]; then turbo run build --filter=@repo/db; fi"
+    "postinstall": "turbo run build --filter=@repo/db",
+    "debug:vercel": "ls -la node_modules/@repo/db && prisma -v"
   },
   "exports": {
     "backend-common": "./packages/backend-common",
