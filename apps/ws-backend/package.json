@@ -9,7 +9,7 @@
     "dev": "npm run build && node ./dist/index.js",
     "db:generate": "cd ../../packages/db && npx prisma generate",
     "start:websocket": "cd apps/ws-backend && npm run dev",
-    "render-build": "npm install -w @repo/db && npm run db:generate && tsc -b"
+    "render-build": "npm install --ignore-scripts -w @repo/db && npm run db:generate && tsc -b"
   },
   "dependencies": {
     "jose": "^6.0.10",
