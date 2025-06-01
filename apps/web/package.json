@@ -10,7 +10,7 @@
     "lint": "next lint --max-warnings 0",
     "check-types": "tsc --noEmit",
     "postinstall": "npm run generate -w @repo/db",
-    "vercel-build": "npm install && cd ../../packages/db && npx prisma generate && cd - && next build",
+    "vercel-build": "npm install && echo 'Current directory:' && pwd && echo 'Contents:' && ls -la && cd ../../packages/db && npx prisma generate && cd - && next build",
     "db:generate": "cd ../../packages/db npx prisma generate --schema=prisma/schema.prisma && npx prisma migrate dev"
   },
   "dependencies": {

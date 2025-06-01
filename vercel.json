@@ -1,15 +1,3 @@
 {
-    "version": 2,
-    "builds": [
-      {
-        "src": "apps/web/package.json",
-        "use": "@vercel/next"
-      }
-    ],
-    "build": {
-      "env": {
-        "PRISMA_CLI_QUERY_ENGINE_TYPE": "binary",
-        "PRISMA_CLIENT_ENGINE_TYPE": "binary"
-      }
-    }
+    "buildCommand": "pnpm run build"
   }
