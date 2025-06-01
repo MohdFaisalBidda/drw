@@ -10,9 +10,9 @@ export default async function Home() {
   const session = await authenticate();
   console.log(session,"session in home");
   
-  // if (!session?.user) {
-  //   redirect("/sign-in");
-  // }
+  if (!session?.user) {
+    redirect("/sign-in");
+  }
 
   const allRooms = await getAllRooms();
   return (
