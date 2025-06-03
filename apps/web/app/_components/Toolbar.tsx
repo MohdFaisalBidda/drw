@@ -51,7 +51,10 @@ function Toolbar({
     { type: "rect", icon: <Square className="h-5 w-5" /> },
     { type: "line", icon: <Minus className="h-5 w-5" /> },
     { type: "text", icon: <Type className="h-5 w-5" /> },
-    { type: "pencil", icon: <Pencil className="h-5 w-5" /> },
+    {
+      type: "pencil",
+      icon: <img src="/pencil-icon.png" className="h-5 w-5" />,
+    },
     { type: "arrow", icon: <ArrowRight className="h-5 w-5" /> },
     { type: "diamond", icon: <Diamond className="h-5 w-5" /> },
     { type: "eraser", icon: <Eraser className="h-5 w-5" /> },
@@ -70,7 +73,7 @@ function Toolbar({
             className={`${selectedTool === tool.type ? "bg-purple-600" : ""} rounded-lg p-2 text-white`}
             key={tool.type}
             onClick={() =>
-              setSelectedTool(tool.type === selectedTool ? null : tool.type)
+              setSelectedTool(tool.type === selectedTool ? selectedTool : tool.type) 
             }
           >
             {tool.icon}

@@ -164,7 +164,7 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
         handleScreenshot={handleScreenshot}
       />
 
-      <div className="absolute top-5 left-2 w-auto">
+      <div className="absolute top-5 left-0 w-auto">
         <PropertiesPanel
           onUpdateShape={handleUpdateShape}
           draw={draw}
@@ -172,7 +172,7 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
         />
       </div>
       <div className="absolute top-4 right-4 flex items-center gap-4">
-        <div className="bg-black/30 backdrop-blur-sm rounded-lg border border-white/10 p-3 shadow-lg">
+        {/* <div className="bg-black/30 backdrop-blur-sm rounded-lg border border-white/10 p-3 shadow-lg">
           <div className="flex items-center gap-2">
             <input
               type="text"
@@ -212,7 +212,7 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
               )}
             </button>
           </div>
-        </div>
+        </div> */}
 
         <button
           onClick={() => setShowLeaveConfirmation(true)}

@@ -95,7 +95,7 @@ export class SelectionManager {
                 this.ctx.font = '24px Comic Sans MS, cursive';
                 const metrics = this.ctx.measureText(shape.text || "");
                 bounds.x = shape.x - 10
-                bounds.y = shape.y - 10
+                bounds.y = shape.y - 24
                 bounds.width = metrics.width + 20;
                 bounds.height = 48;
                 break;
