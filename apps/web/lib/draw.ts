@@ -137,27 +137,36 @@ export class Draw {
   };
 
   private handleDoubleClick = (e: MouseEvent) => {
-    if (this.currentTool === "text") {
+    e.preventDefault();
+    // Only handle double-click for text tool or when selecting existing text
+    if (this.currentTool === "text" ||
+      (this.currentTool === "select" && this.shapes.some(shape =>
+        shape.type === "text" &&
+        this.isPointInShape(this.getCanvasPoint(e).x, this.getCanvasPoint(e).y, shape)
+      ))) {
       const point = this.getCanvasPoint(e);
       const rect = this.canvas.getBoundingClientRect();
-      const canvasX = e.clientX;
-      const canvasY = e.clientY;
-      this.addInput(canvasX, canvasY, '');
-      return
+
+      // Convert canvas coordinates to screen coordinates
+      const screenX = rect.left + this.transform.offsetX + (point.x * this.transform.scale);
+      const screenY = rect.top + this.transform.offsetY + (point.y * this.transform.scale);
+
+      // Check if we're clicking on existing text
+      const clickedText = this.shapes.find(shape =>
+        shape.type === "text" &&
+        this.isPointInShape(point.x, point.y, shape)
+      );
+
+      if (clickedText) {
+        // Edit existing text
+        this.addInput(screenX, screenY, clickedText.text || '');
+      } else if (this.currentTool === "text") {
+        // Create new text
+        this.addInput(screenX, screenY, '');
+      }
+      return;
     }
-
-    if (this.currentTool !== "select") return;
-
-    const point = this.getCanvasPoint(e);
-    const shape = this.shapes.find((shape) => shape.type === "text" && this.isPointInShape(point.x, point.y, shape as Shape));
-    if (shape) {
-      const rect = this.canvas.getBoundingClientRect();
-      const canvasX = rect.left + this.transform.offsetX + (shape.x * this.transform.scale);
-      const canvasY = rect.top + this.transform.offsetY + (shape.y * this.transform.scale);
-      this.addInput(canvasX, canvasY, shape.text || '');
-    }
-
-  }
+  };
 
   private async fetchExistingShapes(): Promise<{ id: Record<string, string>, message: Shape[] }> {
     try {
@@ -189,6 +198,14 @@ export class Draw {
     this.canvas.addEventListener('mousemove', this.handleMouseMove);
     this.canvas.addEventListener('mouseup', this.handleMouseUp);
     this.canvas.addEventListener('wheel', this.handleWheel);
+
+    //Small Screens Events
+    this.canvas.addEventListener('touchstart', this.handleTouchStart);
+    this.canvas.addEventListener('touchmove', this.handleTouchMove);
+    this.canvas.addEventListener('touchend', this.handleTouchEnd);
+
+    this.canvas.addEventListener('touchStart', (e) => e.preventDefault(), { passive: false });
+    this.canvas.addEventListener('touchMove', (e) => e.preventDefault(), { passive: false });
   }
 
   private setupSocketListeners() {
@@ -256,15 +273,36 @@ export class Draw {
       input.setSelectionRange(0, initialText.length)
     }
 
-    input.focus()
+    setTimeout(() => {
+      input.focus()
+      if (initialText) input.select();
+    }, 0);
+
+    const cleanup = () => {
+      // Remove all event listeners
+      input.removeEventListener('keydown', handleKeyDown);
+      input.removeEventListener('blur', handleBlur);
+      document.removeEventListener('mousedown', handleClickOutside);
+
+      // Only remove if still in DOM
+      if (document.body.contains(input)) {
+        document.body.removeChild(input);
+      }
+    };
 
     const handleSubmit = () => {
       if (input.value.trim() !== "") {
+        const rect = this.canvas.getBoundingClientRect();
+
+        // Convert screen coordinates back to canvas coordinates
+        const canvasX = (x - rect.left - this.transform.offsetX) / this.transform.scale;
+        const canvasY = (y - rect.top - this.transform.offsetY) / this.transform.scale;
+
         const newShape: Shape = {
           id: uuidv4(),
           type: "text",
-          x: (x - this.canvas.getBoundingClientRect().left - this.transform.offsetX) / this.transform.scale,
-          y: (y - this.canvas.getBoundingClientRect().top - this.transform.offsetY) / this.transform.scale,
+          x: canvasX,
+          y: canvasY,
           endX: 0, // Will be calculated
           endY: 0, // Will be calculated
           text: input.value.trim(),
@@ -289,17 +327,21 @@ export class Draw {
         }
         this.redraw();
       }
-      document.body.removeChild(input);
+      cleanup()
     };
 
-    input.addEventListener('keydown', (e) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Enter') {
         handleSubmit();
       }
       if (e.key === 'Escape') {
-        document.body.removeChild(input);
+        cleanup();
       }
-    })
+    }
+
+    const handleBlur = () => {
+      handleSubmit();
+    }
 
     const handleClickOutside = (event: MouseEvent) => {
       if (!input.contains(event.target as Node)) {
@@ -307,14 +349,38 @@ export class Draw {
       }
     }
 
+
+    input.addEventListener('keydown', handleKeyDown);
+    input.addEventListener('blur', handleBlur);
     setTimeout(() => {
       document.addEventListener('mousedown', handleClickOutside)
-    }, 10)
+    }, 100)
+  }
 
-    input.addEventListener("blur", () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      handleSubmit();
-    });
+  private handleTouchStart = (e: TouchEvent) => {
+    e.preventDefault()
+    const touch = e.touches[0]
+    const mouseEvent = new MouseEvent('mousedown', {
+      clientX: touch?.clientX,
+      clientY: touch?.clientY,
+    })
+    this.handleMouseDown(mouseEvent)
+  }
+
+  private handleTouchMove = (e: TouchEvent) => {
+    e.preventDefault()
+    const touch = e.touches[0]
+    const mouseEvent = new MouseEvent('mousemove', {
+      clientX: touch?.clientX,
+      clientY: touch?.clientY,
+    })
+    this.handleMouseMove(mouseEvent)
+  }
+
+  private handleTouchEnd = (e: TouchEvent) => {
+    e.preventDefault()
+    const mouseEvent = new MouseEvent('mouseup', {})
+    this.handleMouseUp(mouseEvent)
   }
 
   private handleMouseDown = (e: MouseEvent) => {
@@ -474,7 +540,7 @@ export class Draw {
     }
   };
 
-  private handleMouseUp = () => {
+  private handleMouseUp = (e: MouseEvent) => {
     if (this.currentTool === "select") {
       if (this.selectionManager.isDraggingShape() || this.selectionManager.isResizingShape()) {
         if (this.selectionManager.isDraggingShape()) {

@@ -8,9 +8,7 @@ import {
   ArrowRight,
   Diamond,
   Eraser,
-  BoxSelectIcon,
   Camera,
-  Globe,
 } from "lucide-react";
 import { Tool } from "../../lib/draw";
 
@@ -20,7 +18,7 @@ const Selection = () => {
       aria-hidden="true"
       viewBox="0 0 24 24"
       fill="none"
-      className="c-hdkwsG c-hdkwsG-dvzWZT-size-medium c-hdkwsG-OzWqL-weight-normal c-hdkwsG-iPJLV-css w-5 h-5"
+      className="w-5 h-5"
     >
       <path
         fill="currentColor"
@@ -47,34 +45,38 @@ function Toolbar({
 }) {
   const tools: { type: Tool; icon: React.ReactNode }[] = [
     { type: "select", icon: <Selection /> },
-    { type: "circle", icon: <CircleIcon className="h-5 w-5" /> },
-    { type: "rect", icon: <Square className="h-5 w-5" /> },
-    { type: "line", icon: <Minus className="h-5 w-5" /> },
-    { type: "text", icon: <Type className="h-5 w-5" /> },
-    {
-      type: "pencil",
-      icon: <img src="/pencil-icon.png" className="h-5 w-5" />,
+    { type: "circle", icon: <CircleIcon className="w-4 h-4 lg:h-5 lg:w-5" /> },
+    { type: "rect", icon: <Square className="w-4 h-4 lg:h-5 lg:w-5" /> },
+    { type: "line", icon: <Minus className="w-4 h-4 lg:h-5 lg:w-5" /> },
+    { type: "text", icon: <Type className="w-4 h-4 lg:h-5 lg:w-5" /> },
+    { type: "pencil", icon: <Pencil className="w-4 h-4 lg:h-5 lg:w-5" /> },
+    { type: "arrow", icon: <ArrowRight className="w-4 h-4 lg:h-5 lg:w-5" /> },
+    { type: "diamond", icon: <Diamond className="w-4 h-4 lg:h-5 lg:w-5" /> },
+    { type: "eraser", icon: <Eraser className="w-4 h-4 lg:h-5 lg:w-5" /> },
+    { 
+      type: "camera", 
+      icon: <Camera className="w-4 h-4 lg:h-5 lg:w-5" onClick={handleScreenshot} /> 
     },
-    { type: "arrow", icon: <ArrowRight className="h-5 w-5" /> },
-    { type: "diamond", icon: <Diamond className="h-5 w-5" /> },
-    { type: "eraser", icon: <Eraser className="h-5 w-5" /> },
-    // {
-    //   type: "camera",
-    //   icon: <Camera className="w-5 h-5" onClick={handleScreenshot} />,
-    // },
-    // { type: "iframe", icon: <Globe className="h-5 w-5" /> },
   ];
 
   return (
-    <div className="fixed inset-x-0 top-5 flex items-center justify-center">
-      <div className="flex space-x-2 bg-gray-800 p-2 rounded-lg shadow-lg">
+    <div className="fixed inset-x-0 bottom-5 flex justify-center">
+      <div className="flex lg:space-x-2 bg-gray-800 p-1 lg:p-2 rounded-lg shadow-lg border border-white/10">
         {tools.map((tool) => (
           <button
-            className={`${selectedTool === tool.type ? "bg-purple-600" : ""} rounded-lg p-2 text-white`}
             key={tool.type}
-            onClick={() =>
-              setSelectedTool(tool.type === selectedTool ? selectedTool : tool.type) 
-            }
+            onClick={() => {
+              if (tool.type === "camera") {
+                handleScreenshot();
+              } else {
+                setSelectedTool(tool.type === selectedTool ? null : tool.type);
+              }
+            }}
+            className={`p-2 rounded-lg transition-colors ${
+              selectedTool === tool.type 
+                ? "bg-purple-600 text-white" 
+                : "text-white hover:bg-gray-700"
+            }`}
           >
             {tool.icon}
           </button>

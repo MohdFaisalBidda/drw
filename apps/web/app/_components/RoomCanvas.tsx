@@ -177,6 +177,7 @@ function RoomCanvas({ roomId }: { roomId: string }) {
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
           <span className="block mt-2">Connecting to canvas...</span>
+          <span className="block mt-2">Might take 1-2 minutes to connect as server is deployed on render.</span>
           <div className="mt-4 text-sm text-gray-600">{connectionDetails}</div>
         </div>
       </div>
