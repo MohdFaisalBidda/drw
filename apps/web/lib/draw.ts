@@ -297,14 +297,16 @@ export class Draw {
         // Convert screen coordinates back to canvas coordinates
         const canvasX = (x - rect.left - this.transform.offsetX) / this.transform.scale;
         const canvasY = (y - rect.top - this.transform.offsetY) / this.transform.scale;
+        const metrics = this.ctx.measureText(input.value.trim());
+
 
         const newShape: Shape = {
           id: uuidv4(),
           type: "text",
           x: canvasX,
           y: canvasY,
-          endX: 0, // Will be calculated
-          endY: 0, // Will be calculated
+          endX: canvasX + metrics.width,  // Properly set endX based on text width
+          endY: canvasY + 24,
           text: input.value.trim(),
           color: this.currColor,
           bgColor: this.currBgColor,
@@ -573,6 +575,7 @@ export class Draw {
           strokeStyle: this.currStrokeStyle,
           opacity: this.currOpacity,
         };
+        this.shapes.push(newShape);
         this.sendShapeToServer(newShape);
         this.tempPath = [];
       } else if (this.selectedShape) {
@@ -832,6 +835,12 @@ export class Draw {
           shape.y + 15
         );
         break
+
+      case "text":
+        this.ctx.fillStyle = shape.color;
+        this.ctx.font = '24px Comic Sans MS, cursive';
+        this.ctx.fillText(shape.text || '', shape.x, shape.y);
+        break;
 
       default:
         break;
