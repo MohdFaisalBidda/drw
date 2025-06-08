@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 import { SelectionManager } from './selectionManager';
-import { eraseShape } from './eraser';
+import { eraseShape, isNearCircle, isNearDiamond, isNearPoint, isNearRectangle, isNearText, isPointNearLine } from './eraser';
 import { prisma } from '@repo/db';
 import { getAllShapes } from '@/actions';
 
@@ -48,6 +48,7 @@ export class Draw {
   public currStrokeWidth: number = 2;
   public currStrokeStyle: string = "solid";
   public currOpacity: number = 1;
+  private hoveredShapes: Shape[] = [];
   public selectionManager: SelectionManager;
 
   constructor(canvas: HTMLCanvasElement, roomId: string, socket: WebSocket) {
@@ -438,9 +439,19 @@ export class Draw {
       this.canvas.style.cursor = cursor;
     }
 
-    if (this.currentTool === "eraser") {
+    if (this.currentTool === "eraser" && this.hoveredShapes.length > 0) {
       this.sendShapeDeletionToServer(this.shapes?.find((shape) => this.isPointInShape(point.x, point.y, shape))?.id!); // Send deletion to server
-      this.shapes = eraseShape(this.shapes, point.x, point.y, 10, this.socket, this.roomId);
+      // this.shapes = eraseShape(this.shapes, point.x, point.y, 10, this.socket, this.roomId);
+      const shapeToDelete = this.hoveredShapes[0];
+
+      this.shapes = this.shapes.filter(s => s.id !== shapeToDelete?.id);
+      this.socket.send(JSON.stringify({
+        type: "eraser",
+        id: shapeToDelete?.id,
+        roomId: this.roomId
+      }));
+
+      this.hoveredShapes = [];
       this.redraw();
       return;
     }
@@ -539,6 +550,13 @@ export class Draw {
         }
         this.redraw();
       }
+    }
+
+    if (this.currentTool === "eraser") {
+      this.hoveredShapes = [...this.shapes].reverse().filter(shape =>
+        this.isPointInShape(point.x, point.y, shape)
+      );
+      this.redraw();
     }
   };
 
@@ -701,34 +719,64 @@ export class Draw {
 
   private redraw() {
     if (this.redrawTimeout) clearTimeout(this.redrawTimeout);
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.ctx.save();
+    this.ctx.translate(this.transform.offsetX, this.transform.offsetY);
+    this.ctx.scale(this.transform.scale, this.transform.scale);
 
-    this.redrawTimeout = setTimeout(() => {
-      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-      this.ctx.save();
-      this.ctx.translate(this.transform.offsetX, this.transform.offsetY);
-      this.ctx.scale(this.transform.scale, this.transform.scale);
+    this.ctx.font = '24px Comic Sans MS, cursive';
+    this.shapes.forEach((shape) => this.drawShape(shape));
 
-      this.ctx.font = '24px Comic Sans MS, cursive';
-      this.shapes.forEach((shape) => this.drawShape(shape));
+    if (this.isDrawing && this.selectedShape && this.currentTool !== "pencil") {
+      this.drawShape(this.selectedShape);
+    }
 
-      if (this.isDrawing && this.selectedShape && this.currentTool !== "pencil") {
-        this.drawShape(this.selectedShape);
+    if (this.currentTool === "pencil" && this.tempPath.length > 0) {
+      this.drawTempPencilPath()
+    }
+
+    // Draw selection box if a shape is selected
+    if (this.selectedShape) {
+      const bounds = this.selectionManager.getShapeBounds(this.selectedShape);
+      this.selectionManager.drawSelectionBox(bounds);
+    }
+
+    // Draw all shapes
+    this.shapes.forEach(shape => {
+      this.drawShape(shape);
+
+      // Highlight hovered shapes (most recent gets strongest highlight)
+      const hoverIndex = this.hoveredShapes.findIndex(s => s.id === shape.id);
+      if (hoverIndex >= 0) {
+        this.ctx.save();
+
+        // Stronger highlight for most recent hover (index 0)
+        const opacity = 0.3 + (0.7 * (1 - (hoverIndex / this.hoveredShapes.length)));
+        this.ctx.strokeStyle = `rgba(255, 0, 0, ${opacity})`;
+        this.ctx.lineWidth = 2 + (2 * (1 - hoverIndex / this.hoveredShapes.length));
+        this.ctx.setLineDash([5, 5]);
+
+        const bounds = this.selectionManager.getShapeBounds(shape);
+        this.ctx.strokeRect(
+          bounds.x - 5,
+          bounds.y - 5,
+          bounds.width + 10,
+          bounds.height + 10
+        );
+
+        // Add delete indicator for topmost shape
+        if (hoverIndex === 0) {
+          this.ctx.fillStyle = "red";
+          this.ctx.font = "bold 16px Arial";
+          this.ctx.fillText("×", bounds.x - 15, bounds.y - 5);
+        }
+
+        this.ctx.restore();
       }
+    });
 
-      if (this.currentTool === "pencil" && this.tempPath.length > 0) {
-        this.drawTempPencilPath()
-      }
-
-      // Draw selection box if a shape is selected
-      if (this.selectedShape) {
-        const bounds = this.selectionManager.getShapeBounds(this.selectedShape);
-        this.selectionManager.drawSelectionBox(bounds);
-      }
-
-      // this.sendShapeUpdateToServer(this.selectedShape!, this.selectedShape?.id!);
-      this.ctx.restore();
-
-    }, 16)
+    // this.sendShapeUpdateToServer(this.selectedShape!, this.selectedShape?.id!);
+    this.ctx.restore();
   }
 
   private drawShape(shape: Shape) {
