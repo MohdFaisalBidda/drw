@@ -45,23 +45,23 @@ function Toolbar({
 }) {
   const tools: { type: Tool; icon: React.ReactNode }[] = [
     { type: "select", icon: <Selection /> },
-    { type: "circle", icon: <CircleIcon className="w-4 h-4 lg:h-5 lg:w-5" /> },
-    { type: "rect", icon: <Square className="w-4 h-4 lg:h-5 lg:w-5" /> },
-    { type: "line", icon: <Minus className="w-4 h-4 lg:h-5 lg:w-5" /> },
-    { type: "text", icon: <Type className="w-4 h-4 lg:h-5 lg:w-5" /> },
-    { type: "pencil", icon: <Pencil className="w-4 h-4 lg:h-5 lg:w-5" /> },
-    { type: "arrow", icon: <ArrowRight className="w-4 h-4 lg:h-5 lg:w-5" /> },
-    { type: "diamond", icon: <Diamond className="w-4 h-4 lg:h-5 lg:w-5" /> },
-    { type: "eraser", icon: <Eraser className="w-4 h-4 lg:h-5 lg:w-5" /> },
+    { type: "circle", icon: <CircleIcon className="w-4 h-4" /> },
+    { type: "rect", icon: <Square className="w-4 h-4" /> },
+    { type: "line", icon: <Minus className="w-4 h-4" /> },
+    { type: "text", icon: <Type className="w-4 h-4" /> },
+    { type: "pencil", icon: <Pencil className="w-4 h-4" /> },
+    { type: "arrow", icon: <ArrowRight className="w-4 h-4" /> },
+    { type: "diamond", icon: <Diamond className="w-4 h-4" /> },
+    { type: "eraser", icon: <Eraser className="w-4 h-4" /> },
     { 
       type: "camera", 
-      icon: <Camera className="w-4 h-4 lg:h-5 lg:w-5" onClick={handleScreenshot} /> 
+      icon: <Camera className="w-4 h-4" onClick={handleScreenshot} /> 
     },
   ];
 
   return (
-    <div className="fixed inset-x-0 bottom-5 flex justify-center">
-      <div className="flex lg:space-x-2 bg-gray-800 p-1 lg:p-2 rounded-lg shadow-lg border border-white/10">
+    <div className="fixed inset-x-0 bottom-2 flex justify-center">
+      <div className="flex lg:space-x-2 bg-darkbg p-1 rounded-lg shadow-lg border border-white/10">
         {tools.map((tool) => (
           <button
             key={tool.type}

@@ -7,10 +7,9 @@ import {
   Camera,
   ChevronDown,
   ChevronUp,
-  Loader2,
+  LogOut,
   Minus,
   Plus,
-  PowerOff,
   Sparkles,
 } from "lucide-react";
 import { PropertiesPanel } from "./PropertiesPanel";
@@ -111,12 +110,12 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
       />
 
       {/* Properties panel and toggle button at bottom right */}
-      <div className=" flex items-end gap-2">
+      <div className="flex items-end gap-2">
         {/* Properties Panel */}
         {/* Toggle Button */}
         <button
           onClick={togglePanel}
-          className="fixed bottom-20 right-5 lg:bottom-6 bg-gray-800 lg:right-[42rem] outline-none border-none p-2 lg:p-4 hover:bg-gray-700 rounded-lg"
+          className="lg:hidden fixed bottom-20 right-5 lg:bottom-6 bg-darkbg lg:right-[42rem] outline-none border-none p-2 lg:p-4 hover:bg-gray-700 rounded-lg"
         >
           <motion.div transition={{ duration: 0.2 }}>
             {isPanelOpen ? (
@@ -127,7 +126,7 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
           </motion.div>
         </button>
         {isPanelOpen && (
-          <div className="mb-2 absolute lg:right-[30rem] lg:bottom-20 right-4 bottom-32">
+          <div className="mb-2 absolute lg:right-0 lg:top-16 right-4 bottom-32">
             <PropertiesPanel
               onUpdateShape={handleUpdateShape}
               draw={draw}
@@ -138,32 +137,33 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
       </div>
 
       {/* Zoom controls */}
-      <div className="absolute bottom-20 left-4 lg:bottom-5 lg:left-5 flex items-center gap-2 bg-black/30 backdrop-blur-sm rounded-lg border border-white/10 p-2 text-white">
+      <div className="absolute bottom-20 left-4 lg:bottom-2 lg:left-2 flex items-center gap-2 bg-darkbg backdrop-blur-sm rounded-lg border border-darkbg p-2 text-white">
         <button
           onClick={() =>
             draw?.zoomOut((newScale: number) => setScale(newScale))
           }
           className="p-1 hover:bg-white/10 rounded transition-colors"
         >
-          <Minus className="w-4 h-4" />
+          <Minus className="w-3 h-3" />
         </button>
-        <span className="min-w-[40px] text-center text-xs lg:text-base">
+        <span className="min-w-[40px] text-center text-xs">
           {(scale || 1).toFixed(2)}x
         </span>
         <button
           onClick={() => draw?.zoomIn((newScale: number) => setScale(newScale))}
           className="p-1 hover:bg-white/10 rounded transition-colors"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-3 h-3" />
         </button>
       </div>
 
       {/* Leave button */}
       <button
         onClick={() => setShowLeaveConfirmation(true)}
-        className="fixed top-4 right-4 px-4 py-2 rounded-lg bg-red-500/80 hover:bg-red-500 text-white text-sm font-medium border border-red-400/30 transition-colors duration-200"
+        className="fixed top-2 right-2 px-4 py-2 rounded-lg bg-red-500/50 hover:bg-red-500 text-white text-xs font-medium border border-red-400/30 transition-colors duration-200 flex gap-x-2"
       >
-        <PowerOff className="w-4 h-4" />
+        <LogOut className="w-4 h-4" />
+        Log out
       </button>
 
       {/* Leave confirmation modal */}

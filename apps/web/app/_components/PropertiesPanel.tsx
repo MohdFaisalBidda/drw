@@ -4,6 +4,30 @@ import { Draw, Shape, Tool } from "@/lib/draw";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Circle, CircleDashed, CircleDotDashed, CircleDotIcon } from "lucide-react";
+
+//add more new colors
+const colors = [
+  "#000000",
+  "#FF0000",
+  "#0000FF",
+  "#00FF00",
+  "#FFA500",
+  "#333333",
+  "#FFFFFF",
+  "#800080",
+  "#FFC0CB",
+  "#FFFF00",
+  "#00FFFF",
+  "#A52A2A",
+];
+// const sizes = [{"S":1}, {"M":2}, {"L":4}, {"XL":8}]
+const sizes = [
+  { name: "S", value: 1 },
+  { name: "M", value: 2 },
+  { name: "L", value: 4 },
+  { name: "XL", value: 8 },
+];
 
 interface PropertiesPanelProps {
   onUpdateShape: (updatedShape: Shape) => void;
@@ -109,28 +133,23 @@ export function PropertiesPanel({
           exit={{ opacity: 0, x: 20 }}
           transition={{ duration: 0.2 }}
           className={cn(
-            "w-60 bg-gray-800 p-4 flex flex-col gap-4 rounded-xl border border-white/10 shadow-lg",
+            "w-60 lg:w-48 h-auto bg-darkbg p-4 flex flex-col gap-4 rounded-xl border border-white/10 shadow-lg",
             className
           )}
         >
           <div className="space-y-4">
             {/* Stroke Color */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white">Stroke</label>
-              <div className="flex gap-1">
-                {[
-                  "#000000",
-                  "#FF0000",
-                  "#0000FF",
-                  "#00FF00",
-                  "#FFA500",
-                  "#333333",
-                ].map((color) => (
+              <label className="text-sm font-medium text-white/80">
+                Stroke
+              </label>
+              <div className="grid grid-cols-6 gap-4">
+                {colors.map((color) => (
                   <Button
                     key={color}
                     size="sm"
                     variant="outline"
-                    className={`w-7 h-7 p-0 transition-all ${activeColor === color ? "ring-1 ring-offset-1 ring-white" : "border-none"}`}
+                    className={`w-4 h-4 p-0 rounded-full transition-all ${activeColor === color ? "ring-1 ring-offset-1 ring-white" : "border-none"}`}
                     style={{ backgroundColor: color }}
                     onClick={() => handleStrokeColorChange(color)}
                   />
@@ -140,21 +159,16 @@ export function PropertiesPanel({
 
             {/* Background Color */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white">Background</label>
-              <div className="flex gap-1">
-                {[
-                  "#000000",
-                  "#FF0000",
-                  "#0000FF",
-                  "#00FF00",
-                  "#FFA500",
-                  "#333333",
-                ].map((color) => (
+              <label className="text-sm font-medium text-white/80">
+                Background
+              </label>
+              <div className="grid grid-cols-6 gap-4">
+                {colors.map((color) => (
                   <Button
                     key={color}
                     size="sm"
                     variant="outline"
-                    className={`w-7 h-7 p-0 transition-all ${activeBgColor === color ? "ring-1 ring-offset-1 ring-white" : "border-none"}`} 
+                    className={`w-4 h-4 p-0 rounded-full transition-all ${activeBgColor === color ? "ring-1 ring-offset-1 ring-white" : "border-none"}`}
                     style={{ backgroundColor: color }}
                     onClick={() => handleBgColorChange(color)}
                   />
@@ -164,22 +178,18 @@ export function PropertiesPanel({
 
             {/* Stroke Width */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white">Stroke width</label>
-              <div className="flex gap-1">
-                {[1, 2, 4].map((width) => (
+              <label className="text-sm font-medium text-white/80">
+                Stroke width
+              </label>
+              <div className="flex gap-4">
+                {sizes.map((size) => (
                   <Button
-                    key={width}
+                    key={size.name}
                     variant="secondary"
-                    className={`w-7 h-7 p-0 transition-all ${activeStrokeWidth === width ? "" : "bg-white/50"}`}
-                    onClick={() => handleStrokeWidthChange(width)}
+                    className={`w-7 h-7 p-0 transition-all ${activeStrokeWidth === size.value ? "" : "bg-white/50"}`}
+                    onClick={() => handleStrokeWidthChange(size.value)}
                   >
-                    <div
-                      className="w-4"
-                      style={{
-                        height: `${width}px`,
-                        backgroundColor: "currentColor",
-                      }}
-                    />
+                    {size.name}
                   </Button>
                 ))}
               </div>
@@ -187,35 +197,39 @@ export function PropertiesPanel({
 
             {/* Stroke Style */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white">Stroke style</label>
-              <div className="flex gap-1">
+              <label className="text-sm font-medium text-white/80">
+                Stroke style
+              </label>
+              <div className="flex gap-4">
                 <Button
                   onClick={() => handleStrokeStyleChange("solid")}
                   variant="secondary"
                   className={`w-7 h-7 p-0 transition-all ${activeStrokeStyle === "solid" ? "" : "bg-white/50"}`}
                 >
-                  <div className="w-4 h-[2px] bg-foreground" />
+                  <Circle className="w-4 h-4" />
                 </Button>
                 <Button
                   onClick={() => handleStrokeStyleChange("dashed")}
                   variant="secondary"
                   className={`w-7 h-7 p-0 transition-all ${activeStrokeStyle === "dashed" ? "" : "bg-white/50"}`}
                 >
-                  <div className="w-4 h-[2px] bg-foreground border-dashed border-t-2" />
+                  <CircleDashed className="w-4 h-4" />
                 </Button>
                 <Button
                   onClick={() => handleStrokeStyleChange("dotted")}
                   variant="secondary"
                   className={`w-7 h-7 p-0 transition-all ${activeStrokeStyle === "dotted" ? "" : "bg-white/50"}`}
                 >
-                  <div className="w-4 h-[2px] bg-foreground border-dotted border-t-2" />
+                  <CircleDotDashed className="w-4 h-4" />
                 </Button>
               </div>
             </div>
 
             {/* Opacity */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white">Opacity</label>
+              <label className="text-sm font-medium text-white/80">
+                Opacity
+              </label>
               <div className="px-2">
                 <Slider
                   defaultValue={[100]}
