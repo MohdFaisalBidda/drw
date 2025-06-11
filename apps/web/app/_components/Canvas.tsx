@@ -10,13 +10,27 @@ import {
   LogOut,
   Minus,
   Plus,
+  Share2,
   Sparkles,
 } from "lucide-react";
 import { PropertiesPanel } from "./PropertiesPanel";
 import { motion } from "framer-motion";
+import { saveShapesToDB } from "@/lib/indexDB";
+import { signOut, useSession } from "next-auth/react";
 
-function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
+interface CanvasProps {
+  roomId?: string;
+  socket?: WebSocket;
+  allowAnonymousDrawing?: boolean;
+}
+
+function Canvas({
+  roomId,
+  socket,
+  allowAnonymousDrawing = false,
+}: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { data: session } = useSession();
   const [draw, setDraw] = useState<Draw>();
   const [selectedTool, setSelectedTool] = useState<Tool | null>("rect");
   const [showLeaveConfirmation, setShowLeaveConfirmation] = useState(false);
@@ -31,9 +45,28 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
   const [prompt, setPrompt] = useState("");
   const [isPanelOpen, setIsPanelOpen] = useState(true);
 
+  // In your Canvas component
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (draw) {
+        saveShapesToDB(draw.shapes);
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [draw]);
+
   useEffect(() => {
     if (canvasRef.current) {
-      const drawInstance = new Draw(canvasRef.current, roomId!, socket!);
+      const drawInstance = new Draw(
+        canvasRef.current,
+        roomId!,
+        socket!,
+        allowAnonymousDrawing
+      );
       setDraw(drawInstance);
 
       return () => {
@@ -51,6 +84,7 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
   };
 
   const handleLeaveRoom = () => {
+    signOut();
     if (socket && socket.readyState === WebSocket.OPEN) {
       socket.send(
         JSON.stringify({
@@ -157,14 +191,24 @@ function Canvas({ roomId, socket }: { roomId?: string; socket?: WebSocket }) {
         </button>
       </div>
 
+      <Share2 className="absolute top-4 right-24 w-4 h-4 text-white hover:scale-110 transition-all ease-in-out duration-200 cursor-pointer" />
       {/* Leave button */}
-      <button
-        onClick={() => setShowLeaveConfirmation(true)}
-        className="fixed top-2 right-2 px-4 py-2 rounded-lg bg-red-500/50 hover:bg-red-500 text-white text-xs font-medium border border-red-400/30 transition-colors duration-200 flex gap-x-2"
-      >
-        <LogOut className="w-4 h-4" />
-        Log out
-      </button>
+      {session?.user ? (
+        <button
+          onClick={() => setShowLeaveConfirmation(true)}
+          className="fixed top-2 right-2 px-4 py-2 rounded-lg bg-red-500/50 hover:bg-red-500 text-white text-xs font-medium border border-red-400/30 transition-colors duration-200 flex gap-x-2"
+        >
+          <LogOut className="w-4 h-4" />
+          Log out
+        </button>
+      ) : (
+        <button
+          onClick={() => setShowLeaveConfirmation(true)}
+          className="fixed top-2 right-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500/80 text-white text-xs font-medium border border-none transition-colors duration-200 flex gap-x-2"
+        >
+          Sign in
+        </button>
+      )}
 
       {/* Leave confirmation modal */}
       {showLeaveConfirmation && (

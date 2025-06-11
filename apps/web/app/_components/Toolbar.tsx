@@ -9,6 +9,8 @@ import {
   Diamond,
   Eraser,
   Camera,
+  GrabIcon,
+  HandIcon,
 } from "lucide-react";
 import { Tool } from "../../lib/draw";
 
@@ -45,6 +47,7 @@ function Toolbar({
 }) {
   const tools: { type: Tool; icon: React.ReactNode }[] = [
     { type: "select", icon: <Selection /> },
+    { type: "hand", icon: <HandIcon className="w-4 h-4" /> },
     { type: "circle", icon: <CircleIcon className="w-4 h-4" /> },
     { type: "rect", icon: <Square className="w-4 h-4" /> },
     { type: "line", icon: <Minus className="w-4 h-4" /> },
@@ -53,10 +56,6 @@ function Toolbar({
     { type: "arrow", icon: <ArrowRight className="w-4 h-4" /> },
     { type: "diamond", icon: <Diamond className="w-4 h-4" /> },
     { type: "eraser", icon: <Eraser className="w-4 h-4" /> },
-    { 
-      type: "camera", 
-      icon: <Camera className="w-4 h-4" onClick={handleScreenshot} /> 
-    },
   ];
 
   return (

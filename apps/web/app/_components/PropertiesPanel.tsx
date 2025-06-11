@@ -140,7 +140,7 @@ export function PropertiesPanel({
           <div className="space-y-4">
             {/* Stroke Color */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white/80">
+              <label className="text-xs font-medium text-white/80">
                 Stroke
               </label>
               <div className="grid grid-cols-6 gap-4">
@@ -159,7 +159,7 @@ export function PropertiesPanel({
 
             {/* Background Color */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white/80">
+              <label className="text-xs font-medium text-white/80">
                 Background
               </label>
               <div className="grid grid-cols-6 gap-4">
@@ -178,7 +178,7 @@ export function PropertiesPanel({
 
             {/* Stroke Width */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white/80">
+              <label className="text-xs font-medium text-white/80">
                 Stroke width
               </label>
               <div className="flex gap-4">
@@ -197,7 +197,7 @@ export function PropertiesPanel({
 
             {/* Stroke Style */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white/80">
+              <label className="text-xs font-medium text-white/80">
                 Stroke style
               </label>
               <div className="flex gap-4">
@@ -227,7 +227,7 @@ export function PropertiesPanel({
 
             {/* Opacity */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white/80">
+              <label className="text-xs font-medium text-white/80">
                 Opacity
               </label>
               <div className="px-2">
@@ -250,7 +250,7 @@ export function PropertiesPanel({
             {/* Iframe URL input */}
             {selectedTool === "iframe" && (
               <div className="mb-4">
-                <label className="block text-sm font-medium text-white mb-2">
+                <label className="block text-xs font-medium text-white mb-2">
                   Website URL
                 </label>
                 <input

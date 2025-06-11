@@ -1,4 +1,4 @@
-# DrawSync (Collaborative Drawing Application)
+# Drw (Collaborative Drawing Application)
 
 A full-featured collaborative drawing platform built with Next.js, WebSockets, and modern web technologies. This monorepo project enables real-time collaborative drawing, user management, and project sharing.
 

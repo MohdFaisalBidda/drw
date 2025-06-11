@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { UserIcon } from "lucide-react";
+import { appName } from "@/utils";
 
 export default function Header() {
   const router = useRouter();
@@ -27,8 +28,8 @@ export default function Header() {
   return (
     <header className="flex items-center justify-between px-4 py-3 border-b shadow-sm bg-white">
       {/* Logo */}
-      <Link href="/" className="text-xl font-bold text-primary">
-        DrawSync
+      <Link href="/" className="text-4xl font-bold text-primary font-bagel-fat"> 
+        {appName}
       </Link>
 
       {/* Right: Avatar + Dropdown */}

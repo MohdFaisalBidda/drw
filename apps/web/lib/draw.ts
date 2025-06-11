@@ -4,8 +4,9 @@ import { SelectionManager } from './selectionManager';
 import { eraseShape, isNearCircle, isNearDiamond, isNearPoint, isNearRectangle, isNearText, isPointNearLine } from './eraser';
 import { prisma } from '@repo/db';
 import { getAllShapes } from '@/actions';
+import { loadShapesFromDB } from './indexDB';
 
-export type Tool = 'rect' | 'circle' | 'pencil' | 'line' | 'text' | 'arrow' | 'diamond' | 'draw' | 'eraser' | 'select' | 'camera' | 'iframe';
+export type Tool = 'rect' | 'circle' | 'pencil' | 'line' | 'text' | 'arrow' | 'diamond' | 'draw' | 'eraser' | 'select' | 'camera' | 'iframe' | 'hand';
 
 export interface Shape {
   id: string;
@@ -32,12 +33,16 @@ export interface Shape {
 export class Draw {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
-  private socket: WebSocket;
+  private socket: WebSocket | null;
+  private allowAnonymous: boolean;
   private roomId: string;
   public shapes: Shape[] = [];
   private isDrawing = false;
   private x: number = 0;
   private y: number = 0;
+  private isPanning = false;
+  private panStartX = 0;
+  private panStartY = 0;
   private redrawTimeout: NodeJS.Timeout | null = null;
   private currentTool: Tool = 'select';
   public selectedShape: Shape | null = null;
@@ -51,10 +56,11 @@ export class Draw {
   private hoveredShapes: Shape[] = [];
   public selectionManager: SelectionManager;
 
-  constructor(canvas: HTMLCanvasElement, roomId: string, socket: WebSocket) {
+  constructor(canvas: HTMLCanvasElement, roomId: string, socket: WebSocket, allowAnonymous: boolean = false) {
     this.canvas = canvas;
     this.roomId = roomId;
-    this.socket = socket;
+    this.socket = socket || null;
+    this.allowAnonymous = allowAnonymous;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Cannot get canvas context');
@@ -69,11 +75,19 @@ export class Draw {
   }
 
   async init() {
-    const data = await this.fetchExistingShapes();
-    console.log(data, "data in init");
+    const localShapes = await loadShapesFromDB();
+    if (localShapes.length > 0) {
+      this.shapes = localShapes;
+      this.redraw();
+    }
 
-    this.shapes = data.message;
-    this.redraw();
+    if (!this.allowAnonymous) {
+      const data = await this.fetchExistingShapes();
+      console.log(data, "data in init");
+
+      this.shapes = data.message;
+      this.redraw();
+    }
   }
 
   destroy() {
@@ -86,7 +100,10 @@ export class Draw {
 
   setTool(tool: Tool) {
     this.currentTool = tool;
-    if (tool !== "select") {
+      if (tool === "hand") {
+        this.canvas.style.cursor = 'grab';
+    } 
+    else if (tool !== "select") {
       this.selectedShape = null;
       this.selectionManager.setSelectedShape(null);
       this.redraw();
@@ -210,45 +227,48 @@ export class Draw {
   }
 
   private setupSocketListeners() {
-    this.socket.addEventListener('message', (event) => {
-      try {
-        const message = JSON.parse(event.data);
+    if (this.socket && !this.allowAnonymous) {
+      this.socket.addEventListener('message', (event) => {
+        try {
+          const message = JSON.parse(event.data);
 
-        if (message.type === 'NEW_MESSAGE') {
-          const shape = JSON.parse(message.payload.message);
-          console.log(message.payload, "message.payload in NEW_MESSAGE");
-          const existingIndex = this.shapes.findIndex((s) => s.id === shape.id);
-          if (existingIndex === -1) {
-            this.shapes.push(shape);
-          } else {
-            // Replace existing shape to avoid duplicates
-            this.shapes[existingIndex] = shape;
-          }
-          if (this.selectedShape && this.selectedShape.id === shape.id) {
-            this.selectedShape = shape;
-            this.selectionManager.setSelectedShape(shape);
-          }
-          this.redraw();
-        }
-
-        if (message.type === 'DELETE_SHAPE') {
-          this.shapes = this.shapes.filter((shape) => shape.id !== message.payload.shapeId);
-          this.redraw();
-        }
-
-        if (message.type === 'SHAPE_UPDATED') {
-          const updatedShape = JSON.parse(message.payload.shape);
-          const index = this.shapes.findIndex((shape) => shape.id === updatedShape.id);
-          if (index !== -1) {
-            this.shapes[index] = updatedShape;
+          if (message.type === 'NEW_MESSAGE') {
+            const shape = JSON.parse(message.payload.message);
+            console.log(message.payload, "message.payload in NEW_MESSAGE");
+            const existingIndex = this.shapes.findIndex((s) => s.id === shape.id);
+            if (existingIndex === -1) {
+              this.shapes.push(shape);
+            } else {
+              // Replace existing shape to avoid duplicates
+              this.shapes[existingIndex] = shape;
+            }
+            if (this.selectedShape && this.selectedShape.id === shape.id) {
+              this.selectedShape = shape;
+              this.selectionManager.setSelectedShape(shape);
+            }
             this.redraw();
           }
 
+          if (message.type === 'DELETE_SHAPE') {
+            this.shapes = this.shapes.filter((shape) => shape.id !== message.payload.shapeId);
+            this.redraw();
+          }
+
+          if (message.type === 'SHAPE_UPDATED') {
+            const updatedShape = JSON.parse(message.payload.shape);
+            const index = this.shapes.findIndex((shape) => shape.id === updatedShape.id);
+            if (index !== -1) {
+              this.shapes[index] = updatedShape;
+              this.redraw();
+            }
+
+          }
+        } catch (error) {
+          console.error('Failed to parse incoming message:', event.data, error);
         }
-      } catch (error) {
-        console.error('Failed to parse incoming message:', event.data, error);
-      }
-    });
+      });
+    }
+
   }
 
   private addInput(x: number, y: number, initialText: string) {
@@ -260,10 +280,9 @@ export class Draw {
     input.style.top = `${y}px`;
     input.style.background = "rgba(0, 0, 0, 0.8)";
     input.style.color = this.currColor;
-    input.style.border = `1px solid ${this.currColor}`;
     input.style.outline = "none";
     input.style.fontSize = `${24 * this.transform.scale}px`;
-    input.style.fontFamily = "Comic Sans MS, cursive";
+    input.style.fontFamily = "Bagel Fat One, cursive";
     input.style.maxWidth = "300px";
     input.style.padding = "4px 8px";
     input.style.borderRadius = "4px";
@@ -392,6 +411,13 @@ export class Draw {
     this.y = point.y;
 
 
+    if (this.currentTool === "hand") {
+      this.isPanning = true;
+      this.panStartX = e.clientX;
+      this.panStartY = e.clientY;
+      this.canvas.style.cursor = 'grabbing';
+      return;
+    }
     if (this.currentTool === "select") {
 
       if (this.selectedShape) {
@@ -445,7 +471,7 @@ export class Draw {
       const shapeToDelete = this.hoveredShapes[0];
 
       this.shapes = this.shapes.filter(s => s.id !== shapeToDelete?.id);
-      this.socket.send(JSON.stringify({
+      this.socket?.send(JSON.stringify({
         type: "eraser",
         id: shapeToDelete?.id,
         roomId: this.roomId
@@ -511,6 +537,16 @@ export class Draw {
   private handleMouseMove = (e: MouseEvent) => {
     const point = this.getCanvasPoint(e);
 
+    if (this.currentTool === "hand" && this.isPanning) {
+      const dx = e.clientX - this.panStartX;
+      const dy = e.clientY - this.panStartY;
+      this.transform.offsetX += dx;
+      this.transform.offsetY += dy;
+      this.panStartX = e.clientX;
+      this.panStartY = e.clientY;
+      this.redraw();
+      return;
+    }
     if (this.currentTool === "select") {
       if (this.selectionManager.isDraggingShape() || this.selectionManager.isResizingShape()) {
         if (this.selectionManager.isDraggingShape()) {
@@ -561,6 +597,11 @@ export class Draw {
   };
 
   private handleMouseUp = (e: MouseEvent) => {
+    if (this.currentTool === "hand" && this.isPanning) {
+      this.isPanning = false;
+      this.canvas.style.cursor = 'grab';
+      return;
+    }
     if (this.currentTool === "select") {
       if (this.selectionManager.isDraggingShape() || this.selectionManager.isResizingShape()) {
         if (this.selectionManager.isDraggingShape()) {
@@ -615,49 +656,44 @@ export class Draw {
   };
 
   private async sendShapeToServer(shape: Shape) {
-    console.log(this.socket, this.socket.OPEN, "this.socket.OPEN in sendShapeToServer");
+    console.log(this.socket, this?.socket?.OPEN, "this.socket.OPEN in sendShapeToServer");
 
-    if (this.socket.OPEN) {
+    if (!this.allowAnonymous && this.socket && this.socket.readyState === WebSocket.OPEN) {
       this.socket.send(
         JSON.stringify({
           type: 'NEW_MESSAGE',
           payload: { message: JSON.stringify(shape), roomId: this.roomId },
         })
       );
-    } else {
-      console.log("Socket not ready");
-      // Handle reconnection logic here
-      this.socket.addEventListener("open", () => {
-        this.socket.send(
-          JSON.stringify({
-            type: 'NEW_MESSAGE',
-            payload: { message: JSON.stringify(shape), roomId: this.roomId },
-          })
-        );
-      });
     }
   }
 
   private sendShapeUpdateToServer(shape: Shape, shapeId: string) {
     console.log(shape, shapeId, "shape in sendShapeUpdateToServer");
 
-    this.socket.send(
-      JSON.stringify({
-        type: 'UPDATE_SHAPE',
-        payload: { message: JSON.stringify(shape), roomId: this.roomId, shapeId: shapeId },
-      })
-    );
+    if (!this.allowAnonymous && this.socket) {
+      this.socket.send(
+        JSON.stringify({
+          type: 'UPDATE_SHAPE',
+          payload: { message: JSON.stringify(shape), roomId: this.roomId, shapeId: shapeId },
+        })
+      );
+    }
+
   }
 
   private sendShapeDeletionToServer(shapeId: string) {
     console.log(shapeId, "shapeId in sendShapeDeletionToServer");
 
-    this.socket.send(
-      JSON.stringify({
-        type: 'DELETE_SHAPE',
-        payload: { shapeId, roomId: this.roomId },
-      })
-    );
+    if (!this.allowAnonymous && this.socket) {
+      this.socket.send(
+        JSON.stringify({
+          type: 'DELETE_SHAPE',
+          payload: { shapeId, roomId: this.roomId },
+        })
+      );
+    }
+
   }
 
   private getCanvasPoint(e: MouseEvent) {
@@ -724,7 +760,7 @@ export class Draw {
     this.ctx.translate(this.transform.offsetX, this.transform.offsetY);
     this.ctx.scale(this.transform.scale, this.transform.scale);
 
-    this.ctx.font = '24px Comic Sans MS, cursive';
+    this.ctx.font = '24px Bagel Fat One, cursive';
     this.shapes.forEach((shape) => this.drawShape(shape));
 
     if (this.isDrawing && this.selectedShape && this.currentTool !== "pencil") {
@@ -886,7 +922,7 @@ export class Draw {
 
       case "text":
         this.ctx.fillStyle = shape.color;
-        this.ctx.font = '24px Comic Sans MS, cursive';
+        this.ctx.font = '24px Bagel Fat One, cursive';
         this.ctx.fillText(shape.text || '', shape.x, shape.y);
         break;
 
@@ -927,7 +963,7 @@ export class Draw {
         return false;
 
       case "text":
-        this.ctx.font = '24px Comic Sans MS, cursive';
+        this.ctx.font = '24px Bagel Fat One, cursive';
         const metrics = this.ctx.measureText(shape.text || "");
         return x >= shape.x && x <= shape.x + metrics.width &&
           y >= shape.y - 24 && y <= shape.y;

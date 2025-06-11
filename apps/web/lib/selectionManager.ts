@@ -92,7 +92,7 @@ export class SelectionManager {
                 bounds.y = Math.min(shape.y, shape.endY) - 10;
                 break;
             case "text":
-                this.ctx.font = '24px Comic Sans MS, cursive';
+                this.ctx.font = '24px Bagel Fat One, cursive';
                 const metrics = this.ctx.measureText(shape.text || "");
                 bounds.x = shape.x - 10
                 bounds.y = shape.y - 24
@@ -270,8 +270,8 @@ export class SelectionManager {
                 // Move the circle's start and end points by the same amount
                 this.selectedShape.x = dx;
                 this.selectedShape.y = dy;
-                this.selectedShape.endX = dx + (this.selectedShape.width * 2); // Diameter = radius * 2
-                this.selectedShape.endY = dy + (this.selectedShape.height * 2); // Diameter = radius * 2
+                this.selectedShape.endX = dx + (this.selectedShape.width); // Diameter = radius
+                this.selectedShape.endY = dy + (this.selectedShape.height); // Diameter = radius * 2
             }
             else {
                 // For other shapes, just update the position
