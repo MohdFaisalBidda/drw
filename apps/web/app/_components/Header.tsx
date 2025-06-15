@@ -11,7 +11,13 @@ export default function Header() {
   const router = useRouter();
   const { data: session } = useSession();
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const [scrollY, setScrollY] = React.useState(0);
 
+  React.useEffect(() => {
+    const handleScroll = () => setScrollY(window.scrollY);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
   const user = session?.user;
 
   return (
