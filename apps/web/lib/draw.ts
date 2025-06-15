@@ -31,6 +31,7 @@ export interface Shape {
 }
 
 export class Draw {
+  private userId: string | null;
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private socket: WebSocket | null;
@@ -55,11 +56,14 @@ export class Draw {
   public currOpacity: number = 1;
   private hoveredShapes: Shape[] = [];
   public selectionManager: SelectionManager;
+  public remoteCursors: Record<string, HTMLElement> = {};
+  private lastCursorPosition = { x: 0, y: 0 };
 
-  constructor(canvas: HTMLCanvasElement, roomId: string, socket: WebSocket, allowAnonymous: boolean = false) {
+  constructor(canvas: HTMLCanvasElement, roomId: string, socket: WebSocket, allowAnonymous: boolean = false, userId?: string) {
     this.canvas = canvas;
     this.roomId = roomId;
     this.socket = socket || null;
+    this.userId = userId || null;
     this.allowAnonymous = allowAnonymous;
 
     const ctx = canvas.getContext('2d');
@@ -72,6 +76,7 @@ export class Draw {
     this.setupCanvas();
     this.setupEventListeners();
     this.setupSocketListeners();
+    this.setupPresence();
   }
 
   async init() {
@@ -82,11 +87,7 @@ export class Draw {
     }
 
     if (!this.allowAnonymous) {
-      const data = await this.fetchExistingShapes();
-      console.log(data, "data in init");
-
-      this.shapes = data.message;
-      this.redraw();
+      await this.syncInitialState();
     }
   }
 
@@ -100,9 +101,9 @@ export class Draw {
 
   setTool(tool: Tool) {
     this.currentTool = tool;
-      if (tool === "hand") {
-        this.canvas.style.cursor = 'grab';
-    } 
+    if (tool === "hand") {
+      this.canvas.style.cursor = 'grab';
+    }
     else if (tool !== "select") {
       this.selectedShape = null;
       this.selectionManager.setSelectedShape(null);
@@ -226,27 +227,291 @@ export class Draw {
     this.canvas.addEventListener('touchMove', (e) => e.preventDefault(), { passive: false });
   }
 
+  //Presene and cursor implementation
+  private setupPresence() {
+    if (!this.socket) return;
+
+    this.socket.addEventListener('message', (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        if (message.type === 'PRESENCE_UPDATE') {
+          console.log(message.payload, "message in setupPresence");
+
+          this.updatePresenceUI(message.payload.users)
+        }
+      } catch (error) {
+        console.log('Invalid message format received', error);
+
+      }
+    })
+  }
+
+  private updatePresenceUI(users: Array<{ id: string, name: string }>) {
+    // Filter out current user
+    const otherUsers = users.filter(user => user.id !== this.userId);
+
+    // Remove existing UI if it exists
+    const existingPresence = document.getElementById('presence-ui-container');
+    if (existingPresence) {
+      existingPresence.remove();
+    }
+
+    // Don't show if no other users
+    if (otherUsers.length === 0) return;
+
+    // Create container
+    const container = document.createElement('div');
+    container.id = 'presence-ui-container';
+    container.style.position = 'fixed';
+    container.style.top = '20px';
+    container.style.left = '50%';
+    container.style.transform = 'translateX(-50%)';
+    container.style.display = 'flex';
+    container.style.zIndex = '1000';
+    container.style.gap = '0';
+    container.style.padding = '0';
+
+    // Create user avatars (maximum 5 shown)
+    const maxVisible = 5;
+    const usersToShow = otherUsers.slice(0, maxVisible);
+    const overflowCount = otherUsers.length - maxVisible;
+
+    usersToShow.forEach((user, index) => {
+      const hue = parseInt(user.id.replace(/[^\d]/g, '').slice(0, 3)) % 360;
+      const userColor = `hsl(${hue}, 80%, 60%)`;
+      const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
+
+      // Create avatar element
+      const avatar = document.createElement('div');
+      avatar.className = 'user-avatar';
+      avatar.style.width = '32px';
+      avatar.style.height = '32px';
+      avatar.style.borderRadius = '50%';
+      avatar.style.backgroundColor = userColor;
+      avatar.style.display = 'flex';
+      avatar.style.justifyContent = 'center';
+      avatar.style.alignItems = 'center';
+      avatar.style.color = 'white';
+      avatar.style.fontWeight = 'bold';
+      avatar.style.fontSize = '12px';
+      avatar.style.marginLeft = index > 0 ? '-12px' : '0'; // Stacking overlap
+      avatar.style.border = '2px solid white';
+      avatar.style.transition = 'all 0.2s ease';
+      avatar.style.cursor = 'pointer';
+      avatar.style.position = 'relative';
+      avatar.style.zIndex = `${maxVisible - index}`; // Stacking order
+      avatar.textContent = initials;
+
+      // Create tooltip with full name
+      const tooltip = document.createElement('div');
+      tooltip.className = 'user-tooltip';
+      tooltip.textContent = user.name;
+      tooltip.style.position = 'absolute';
+      tooltip.style.top = '150%';
+      tooltip.style.left = '50%';
+      tooltip.style.transform = 'translateX(-50%)';
+      tooltip.style.backgroundColor = 'rgba(0,0,0,0.8)';
+      tooltip.style.color = 'white';
+      tooltip.style.padding = '4px 8px';
+      tooltip.style.borderRadius = '4px';
+      tooltip.style.fontSize = '12px';
+      tooltip.style.whiteSpace = 'nowrap';
+      tooltip.style.opacity = '0';
+      tooltip.style.transition = 'opacity 0.2s ease';
+      tooltip.style.marginBottom = '8px';
+      tooltip.style.pointerEvents = 'none';
+
+      // Hover effects
+      avatar.addEventListener('mouseenter', () => {
+        avatar.style.transform = 'translateY(-5px)';
+        tooltip.style.opacity = '1';
+      });
+
+      avatar.addEventListener('mouseleave', () => {
+        avatar.style.transform = 'translateY(0)';
+        tooltip.style.opacity = '0';
+      });
+
+      avatar.appendChild(tooltip);
+      container.appendChild(avatar);
+    });
+
+    // Add overflow indicator if needed
+    if (overflowCount > 0) {
+      const overflow = document.createElement('div');
+      overflow.className = 'overflow-indicator';
+      overflow.style.width = '32px';
+      overflow.style.height = '32px';
+      overflow.style.borderRadius = '50%';
+      overflow.style.backgroundColor = '#f5f5f5';
+      overflow.style.display = 'flex';
+      overflow.style.justifyContent = 'center';
+      overflow.style.alignItems = 'center';
+      overflow.style.color = '#666';
+      overflow.style.fontWeight = 'bold';
+      overflow.style.fontSize = '12px';
+      overflow.style.marginLeft = '-12px';
+      overflow.style.border = '2px solid white';
+      overflow.style.zIndex = '0';
+      overflow.textContent = `+${overflowCount}`;
+
+      container.appendChild(overflow);
+    }
+
+    document.body.appendChild(container);
+
+    this.updateRemoteCursors(users);
+  }
+
+  private updateRemoteCursors(users: Array<{ id: string, name: string }>) {
+    // Remove cursors for users who left
+    Object.keys(this.remoteCursors).forEach(userId => {
+      if (!users.some(u => u.id === userId)) {
+        const cursor = this.remoteCursors[userId];
+        if (cursor && document.body.contains(cursor)) {
+          document.body.removeChild(cursor);
+        }
+        delete this.remoteCursors[userId];
+      }
+    });
+
+    // Add/update cursors for current users (except self)
+    users.forEach(user => {
+      if (user.id === this.userId) return;
+
+      if (!this.remoteCursors[user.id]) {
+        // Generate color based on user ID
+        const hue = parseInt(user.id.replace(/[^\d]/g, '').slice(0, 3)) % 360;
+        const userColor = `hsl(${hue}, 80%, 60%)`;
+
+        // Create cursor container
+        const cursorContainer = document.createElement('div');
+        cursorContainer.className = 'remote-cursor-container';
+        cursorContainer.style.position = 'fixed';
+        cursorContainer.style.pointerEvents = 'none';
+        cursorContainer.style.zIndex = '9999';
+
+        // Create larger cursor arrow (keeping original shape)
+        const cursor = document.createElement('div');
+        cursor.className = 'remote-cursor';
+        cursor.style.width = '0';
+        cursor.style.height = '0';
+        cursor.style.borderLeft = '10px solid transparent'; // Increased from 6px
+        cursor.style.borderRight = '10px solid transparent'; // Increased from 6px
+        cursor.style.borderBottom = '18px solid ' + userColor; // Increased from 12px
+        cursor.style.transform = 'rotate(-45deg)';
+        cursor.style.position = 'absolute';
+        cursor.style.left = '0';
+        cursor.style.top = '0';
+        cursor.style.filter = 'drop-shadow(0 0 2px rgba(0,0,0,0.3))';
+
+        // Create label positioned bottom right of cursor
+        const label = document.createElement('div');
+        label.textContent = user.name || 'Anonymous';
+        label.style.position = 'absolute';
+        label.style.left = '20px'; // Positioned to the right
+        label.style.top = '14px'; // Positioned slightly below
+        label.style.whiteSpace = 'nowrap';
+        label.style.fontSize = '13px';
+        label.style.fontWeight = '500';
+        label.style.fontFamily = 'system-ui, sans-serif';
+        label.style.color = 'white';
+        label.style.backgroundColor = userColor;
+        label.style.padding = '4px 10px';
+        label.style.borderRadius = '12px';
+        label.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.2)';
+
+        // Add elements to container
+        cursorContainer.appendChild(cursor);
+        cursorContainer.appendChild(label);
+
+        // Add to document and store reference
+        document.body.appendChild(cursorContainer);
+        this.remoteCursors[user.id] = cursorContainer;
+      }
+    });
+  }
+
+  public removeUserCursor(userId: string) {
+    const cursor = this.remoteCursors[userId];
+    if (cursor && document.body.contains(cursor)) {
+      if (cursor.parentNode === document.body) {
+        document.body.removeChild(cursor);
+      }
+      delete this.remoteCursors[userId];
+    }
+
+    const existingPresence = document.getElementById('presence-ui-container');
+    if (existingPresence) {
+      existingPresence.remove();
+    }
+  }
+
+  public updateRemoteCursorPosition(userId: string, x: number, y: number) {
+    const cursor = this.remoteCursors[userId];
+    if (cursor) {
+      cursor.style.left = `${x}px`;
+      cursor.style.top = `${y}px`;
+    }
+  }
+
+  private sendCursorPosition() {
+    if (this.socket && this.userId) {
+      this.socket.send(JSON.stringify({
+        type: "CURSOR_POSITION",
+        payload: {
+          x: this.lastCursorPosition.x,
+          y: this.lastCursorPosition.y,
+          userId: this.userId,
+          roomId: this.roomId
+        }
+      }))
+    }
+  }
+
+  private handleIncomingShape(shape: Shape, senderId?: string) {
+    // Ignore echo if this is our own shape (optional)
+    if (senderId === this.userId) return;
+
+    // Check if shape already exists
+    const existingIndex = this.shapes.findIndex(s => s.id === shape.id);
+
+    if (existingIndex === -1) {
+      // New shape - add to beginning (or end) of array
+      this.shapes.unshift(shape);
+    } else {
+      // Existing shape - update it
+      this.shapes[existingIndex] = shape;
+    }
+
+    // Trigger immediate redraw
+    this.redraw();
+  }
+
+  private async syncInitialState() {
+    try {
+      const { message: shapes } = await this.fetchExistingShapes();
+      this.shapes = shapes;
+      this.redraw();
+    } catch (error) {
+      console.error('Initial sync failed:', error);
+      // Fallback to local storage if available
+      const localShapes = await loadShapesFromDB();
+      if (localShapes.length > 0) {
+        this.shapes = localShapes;
+        this.redraw();
+      }
+    }
+  }
+
   private setupSocketListeners() {
     if (this.socket && !this.allowAnonymous) {
       this.socket.addEventListener('message', (event) => {
         try {
           const message = JSON.parse(event.data);
 
-          if (message.type === 'NEW_MESSAGE') {
-            const shape = JSON.parse(message.payload.message);
-            console.log(message.payload, "message.payload in NEW_MESSAGE");
-            const existingIndex = this.shapes.findIndex((s) => s.id === shape.id);
-            if (existingIndex === -1) {
-              this.shapes.push(shape);
-            } else {
-              // Replace existing shape to avoid duplicates
-              this.shapes[existingIndex] = shape;
-            }
-            if (this.selectedShape && this.selectedShape.id === shape.id) {
-              this.selectedShape = shape;
-              this.selectionManager.setSelectedShape(shape);
-            }
-            this.redraw();
+          if (message.type === 'CREATE_SHAPE') {
+            this.handleIncomingShape(message.payload.shape, message.payload.senderId);
           }
 
           if (message.type === 'DELETE_SHAPE') {
@@ -262,6 +527,26 @@ export class Draw {
               this.redraw();
             }
 
+          }
+
+          if (message.type === "REMOTE_CURSOR_UPDATE") {
+            this.updateRemoteCursorPosition(
+              message.payload.userId,
+              message.payload.x,
+              message.payload.y
+            )
+          }
+
+          if (message.type === "USER_LEFT") {
+            console.log(`User ${message.payload.userId} left, removing cursor`);
+            this.removeUserCursor(message.payload.userId);
+            // Force a presence update by requesting current room state
+            if (this.socket) {
+              this.socket.send(JSON.stringify({
+                type: "REQUEST_PRESENCE_UPDATE",
+                roomId: this.roomId
+              }));
+            }
           }
         } catch (error) {
           console.error('Failed to parse incoming message:', event.data, error);
@@ -536,6 +821,8 @@ export class Draw {
 
   private handleMouseMove = (e: MouseEvent) => {
     const point = this.getCanvasPoint(e);
+    this.lastCursorPosition = point;
+    this.sendCursorPosition();
 
     if (this.currentTool === "hand" && this.isPanning) {
       const dx = e.clientX - this.panStartX;
@@ -661,7 +948,7 @@ export class Draw {
     if (!this.allowAnonymous && this.socket && this.socket.readyState === WebSocket.OPEN) {
       this.socket.send(
         JSON.stringify({
-          type: 'NEW_MESSAGE',
+          type: 'CREATE_SHAPE',
           payload: { message: JSON.stringify(shape), roomId: this.roomId },
         })
       );

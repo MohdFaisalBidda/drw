@@ -192,7 +192,7 @@ export class Draw {
       try {
         const message = JSON.parse(event.data);
 
-        if (message.type === 'NEW_MESSAGE') {
+        if (message.type === 'CREATE_SHAPE') {
           const shape = JSON.parse(message.payload.message);
           const dbShape = message.payload.shape;
 
@@ -859,7 +859,7 @@ export class Draw {
   private sendShapeToServer(shape: Shape) {
     this.socket.send(
       JSON.stringify({
-        type: 'NEW_MESSAGE',
+        type: 'CREATE_SHAPE',
         payload: { message: JSON.stringify(shape), roomId: this.roomId },
       })
     );

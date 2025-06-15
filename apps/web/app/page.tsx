@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { appName } from "@/utils";
+import Header from "./_components/Header";
 
 function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -82,94 +83,7 @@ function App() {
         <div className="absolute bottom-20 left-20 w-80 h-80 bg-purple-500/5 rounded-full blur-3xl"></div>
       </div>
 
-      {/* Header */}
-      <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrollY > 50
-            ? "bg-[#202025]/90 backdrop-blur-xl border-b border-white/5"
-            : "bg-transparent"
-        }`}
-      >
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
-                <PenTool className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-3xl font-bagel-fat font-semibold text-white">
-                {appName}
-              </span>
-            </div>
-
-            <nav className="hidden md:flex items-center space-x-8">
-              <a
-                href="#features"
-                className="text-gray-400 hover:text-white transition-colors duration-200"
-              >
-                Features
-              </a>
-              <a
-                href="#demo"
-                className="text-gray-400 hover:text-white transition-colors duration-200"
-              >
-                Demo
-              </a>
-              <a
-                href="#pricing"
-                className="text-gray-400 hover:text-white transition-colors duration-200"
-              >
-                Pricing
-              </a>
-              <button className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200">
-                Get Started
-              </button>
-            </nav>
-
-            <button
-              className="md:hidden"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-            >
-              {isMenuOpen ? (
-                <X className="w-6 h-6" />
-              ) : (
-                <Menu className="w-6 h-6" />
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="md:hidden bg-[#202025]/95 backdrop-blur-xl border-b border-white/5">
-            <div className="px-6 py-6 space-y-4">
-              <a
-                href="#features"
-                className="block py-2 text-gray-400 hover:text-white transition-colors"
-              >
-                Features
-              </a>
-              <a
-                href="#demo"
-                className="block py-2 text-gray-400 hover:text-white transition-colors"
-              >
-                Demo
-              </a>
-              <a
-                href="#pricing"
-                className="block py-2 text-gray-400 hover:text-white transition-colors"
-              >
-                Pricing
-              </a>
-              <Link href="/drw">
-                <button className="w-full bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium mt-4">
-                  Get Started
-                </button>
-              </Link>
-            </div>
-          </div>
-        )}
-      </header>
-
+      <Header />
       {/* Hero Section */}
       <section className="relative z-10 pt-24 pb-16 lg:pt-32 lg:pb-24">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">

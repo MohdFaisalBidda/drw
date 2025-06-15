@@ -2,7 +2,17 @@
 
 import React, { useState } from "react";
 import { createUser } from "../../../actions";
-import { Palette, Users, Zap } from "lucide-react";
+import {
+  ArrowRight,
+  Eye,
+  EyeOff,
+  Lock,
+  Mail,
+  Palette,
+  UserPlus,
+  Users,
+  Zap,
+} from "lucide-react";
 import Link from "next/link";
 import { styles } from "../../../styles/shared";
 import { useRouter } from "next/navigation";
@@ -16,7 +26,11 @@ function Signup() {
     username: "",
     email: "",
     password: "",
+    confirmPassword: "",
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
 
@@ -39,6 +53,11 @@ function Signup() {
       return false;
     }
 
+    if (userData.password !== userData.confirmPassword) {
+      setError("Passwords do not match.");
+      return false;
+    }
+
     setError(""); // Clear any existing errors
     return true;
   };
@@ -54,6 +73,7 @@ function Signup() {
     if (!validateForm()) return;
 
     try {
+      setIsLoading(true);
       const res = await createUser(userData);
 
       if (!res.success) {
@@ -80,7 +100,8 @@ function Signup() {
       } else {
         toast({
           title: "Login failed",
-          description: "Signup succeeded but auto-login failed. Please try manually.",
+          description:
+            "Signup succeeded but auto-login failed. Please try manually.",
           variant: "destructive",
         });
         router.push("/sign-in");
@@ -92,111 +113,190 @@ function Signup() {
         description: "Something went wrong. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className={styles.gradientBg}>
-      <div className={styles.container}>
-        <div className="max-w-md mx-auto">
-          {/* Logo */}
+    <div
+      className="min-h-screen flex items-center justify-center py-12"
+      style={{ backgroundColor: "#202025" }}
+    >
+      {/* Background Elements */}
+      <div className="fixed inset-0 z-0">
+        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 left-1/4 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+      </div>
+
+      <div className="relative z-10 w-full max-w-xl mx-auto px-6">
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl">
+          {/* Header */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 mb-4">
-              <Palette className="w-8 h-8 text-white" />
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-600 rounded-2xl mb-4 transform hover:scale-105 transition-transform duration-200">
+              <UserPlus className="w-8 h-8 text-white" />
             </div>
-            <h1>Start Creating</h1>
-            <p className={styles.subheading}>
-              Join our creative community today
+            <h1 className="text-2xl font-bold text-white mb-2">
+              Create your account
+            </h1>
+            <p className="text-gray-400">
+              Join SketchBoard and start collaborating
             </p>
           </div>
 
-          {/* Sign Up Form */}
-          <div className={`${styles.card} p-8 space-y-6`}>
-            <form onSubmit={handleSignUp} className="space-y-6">
+          {/* Form */}
+          <form onSubmit={handleSignUp} className="space-y-6">
+            <div className="space-y-4">
               <div>
-                <label htmlFor="username" className={styles.inputLabel}>
-                  Username
+                <label
+                  htmlFor="name"
+                  className="block text-sm font-medium text-gray-300 mb-2"
+                >
+                  User Name
                 </label>
                 <input
                   id="username"
-                  name="username"
                   type="text"
+                  name="username"
                   value={userData.username}
                   onChange={handleOnChange}
-                  className={styles.input}
-                  placeholder="Faisal"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                  placeholder="Enter your username"
+                  required
                 />
               </div>
 
               <div>
-                <label htmlFor="email" className={styles.inputLabel}>
-                  Email
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-300 mb-2"
+                >
+                  Email address
                 </label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={userData.email}
-                  onChange={handleOnChange}
-                  className={styles.input}
-                  placeholder="you@example.com"
-                />
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    id="email"
+                    type="email"
+                    name="email"
+                    value={userData.email}
+                    onChange={handleOnChange}
+                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                    placeholder="Enter your email"
+                    required
+                  />
+                </div>
               </div>
 
               <div>
-                <label htmlFor="password" className={styles.inputLabel}>
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-300 mb-2"
+                >
                   Password
                 </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  value={userData.password}
-                  onChange={handleOnChange}
-                  className={styles.input}
-                  placeholder="••••••••"
-                />
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    value={userData.password}
+                    onChange={handleOnChange}
+                    className="w-full pl-10 pr-12 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                    placeholder="Create a password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors duration-200"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
+                  </button>
+                </div>
               </div>
 
-              {error && (
-                <div className={`${styles.error} text-red-500 text-sm`}>
-                  {error}
+              <div>
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-sm font-medium text-gray-300 mb-2"
+                >
+                  Confirm password
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={userData.confirmPassword}
+                    onChange={handleOnChange}
+                    className="w-full pl-10 pr-12 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                    placeholder="Confirm your password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors duration-200"
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
+                  </button>
                 </div>
+              </div>
+            </div>
+
+            {error && (
+              <div className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-lg p-3">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-purple-600/50 text-white py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2 transform hover:scale-[1.02] active:scale-[0.98]"
+            >
+              {isLoading ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              ) : (
+                <>
+                  <span>Create Account</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
               )}
+            </button>
+          </form>
 
-              <button type="submit" className={styles.button.primary}>
-                Create Account
-              </button>
-            </form>
-
-            <p className="text-center text-sm text-gray-600">
+          {/* Footer */}
+          <div className="mt-6 text-center">
+            <p className="text-gray-400 text-sm">
               Already have an account?{" "}
-              <Link href="/sign-in" className={styles.link}>
+              <button
+                onClick={() => router.push("/sign-in")}
+                className="text-purple-400 hover:text-purple-300 font-medium transition-colors duration-200"
+              >
                 Sign in
-              </Link>
+              </button>
             </p>
           </div>
 
-          {/* Features Grid */}
-          <div className="mt-8 grid grid-cols-2 gap-4">
-            <div className="p-4 rounded-xl bg-white/50 backdrop-blur-sm border border-white/20">
-              <div className="flex items-center gap-2 mb-2">
-                <Users className="w-4 h-4 text-purple-600" />
-                <h3 className="font-medium">Collaborate</h3>
-              </div>
-              <p className="text-sm text-gray-600">
-                Work together with your team in real-time
-              </p>
-            </div>
-            <div className="p-4 rounded-xl bg-white/50 backdrop-blur-sm border border-white/20">
-              <div className="flex items-center gap-2 mb-2">
-                <Zap className="w-4 h-4 text-purple-600" />
-                <h3 className="font-medium">Fast & Smooth</h3>
-              </div>
-              <p className="text-sm text-gray-600">
-                Enjoy a lag-free drawing experience
-              </p>
-            </div>
+          <div className="mt-4 text-center">
+            <button
+              onClick={() => router.push("/")}
+              className="text-gray-400 hover:text-white text-sm transition-colors duration-200"
+            >
+              ← Back to home
+            </button>
           </div>
         </div>
       </div>

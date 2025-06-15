@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { styles } from "../../styles/shared";
-import { Paintbrush, Plus } from "lucide-react";
+import { ArrowRight, Paintbrush, PenTool, Plus, Users } from "lucide-react";
 import Link from "next/link";
 import { useUser } from "../../provider/UserProvider";
 import { getToken } from "next-auth/jwt";
@@ -12,6 +12,7 @@ export default function JoinRoomPage({ allRooms }: { allRooms: any }) {
   const [roomId, setRoomId] = useState("");
   const [error, setError] = useState("");
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
   const { user } = useUser();
 
   const handleJoinRoom = async () => {
@@ -20,106 +21,175 @@ export default function JoinRoomPage({ allRooms }: { allRooms: any }) {
       return;
     }
 
-    try {
-      // Get auth token from localStorage
+    if (!user) {
+      setError("Please sign in to join a room");
+      return;
+    }
 
-      // Initialize WebSocket and join room
-      // Redirect to canvas page
+    try {
+      setIsLoading(true);
       router.push(`/draw/${roomId}`);
     } catch (err) {
       setError("Failed to join room. Please try again.");
       console.error(err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
-      <div className={styles.container}>
+    <div
+      className="min-h-screen py-12 pt-28"
+      style={{ backgroundColor: "#202025" }}
+    >
+      {/* Background Elements */}
+      <div className="fixed inset-0 z-0">
+        <div className="absolute top-20 right-20 w-96 h-96 bg-purple-600/5 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 left-20 w-80 h-80 bg-purple-500/5 rounded-full blur-3xl"></div>
+      </div>
+
+      <div className="relative z-10 max-w-4xl mx-auto px-6">
         {/* Header */}
         <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 mb-4">
-            <Paintbrush className="w-8 h-8 text-white" />
-          </div>
-          <h1>Drawing Rooms</h1>
-          <p className={styles.subheading}>Join a room or create your own</p>
+          <h1 className="text-3xl lg:text-4xl font-bold text-white mb-4">
+            Drawing Rooms
+          </h1>
+          <p className="text-lg text-gray-400">
+            Join a room or create your own collaborative workspace
+          </p>
         </div>
 
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="roomId" className={styles.inputLabel}>
-              Room ID
-            </label>
-            <input
-              id="roomId"
-              placeholder="Enter Room ID"
-              value={roomId}
-              className={styles.input}
-              onChange={(e) => {
-                setRoomId(e.target.value);
-                setError("");
-              }}
-            />
-          </div>
+        <div className="grid lg:grid-cols-2 gap-8">
+          {/* Join Room Section */}
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8">
+            <h2 className="text-xl font-semibold text-white mb-6">
+              Join Existing Room
+            </h2>
 
-          {error && <div className="text-red-500 text-sm">{error}</div>}
-
-          <button
-            onClick={handleJoinRoom}
-            className={`${styles.button.primary}`}
-          >
-            Join Room
-          </button>
-          {/* Create Room Button */}
-          <div className="mb-8">
-            <Link href="/create-room">
-              <button
-                className={`${styles.button.secondary} !bg-green-600 hover:!bg-green-700`}
-              >
-                <span className="flex items-center justify-center gap-2">
-                  <Plus className="w-5 h-5" />
-                  Create New Room
-                </span>
-              </button>
-            </Link>
-          </div>
-        </div>
-
-        {error && <div className={`${styles.error} mb-8`}>{error}</div>}
-
-        {/* Available Rooms Section */}
-      </div>
-      <div className={styles.container}>
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">
-          Available Rooms
-        </h2>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {allRooms.map((room: any) => (
-            <div
-              key={room.id}
-              className="p-4 rounded-lg border border-gray-200 hover:border-blue-500 hover:shadow-md transition duration-200 cursor-pointer"
-              onClick={() => {
-                setRoomId(room.id);
-                setError("");
-              }}
-            >
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="h-3 w-3 rounded-full bg-green-500"></div>
-                    <p className="font-medium text-gray-800">{room.name}</p>
-                  </div>
-                  <span className="text-sm text-gray-500">
-                    {room.participants}{" "}
-                    {room.participants === 1 ? "user" : "users"}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-500">ID: {room.id}</p>
+            <div className="space-y-4">
+              <div>
+                <label
+                  htmlFor="roomId"
+                  className="block text-sm font-medium text-gray-300 mb-2"
+                >
+                  Room ID
+                </label>
+                <input
+                  id="roomId"
+                  type="text"
+                  value={roomId}
+                  onChange={(e) => {
+                    setRoomId(e.target.value);
+                    setError("");
+                  }}
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                  placeholder="Enter Room ID"
+                />
               </div>
+
+              {error && (
+                <div className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-lg p-3">
+                  {error}
+                </div>
+              )}
+
+              <button
+                onClick={handleJoinRoom}
+                disabled={isLoading}
+                className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-purple-600/50 text-white py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2 transform hover:scale-[1.02] active:scale-[0.98]"
+              >
+                {isLoading ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                ) : (
+                  <>
+                    <span>Join Room</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
             </div>
-          ))}
+          </div>
+
+          {/* Create Room Section */}
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8">
+            <h2 className="text-xl font-semibold text-white mb-6">
+              Create New Room
+            </h2>
+
+            <div className="space-y-4">
+              <p className="text-gray-400 text-sm">
+                Start a new collaborative session and invite your team members
+                to join.
+              </p>
+
+              <button
+                onClick={() => router.push("/create-room")}
+                className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2 transform hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Create New Room</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Available Rooms */}
+        <div className="mt-12">
+          <h2 className="text-2xl font-bold text-white mb-6">
+            Available Rooms
+          </h2>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {allRooms.map((room: any, index: number) => (
+              <div
+                key={room.id}
+                onClick={() => setRoomId(room.id)}
+                className="bg-white/5 border border-white/10 rounded-xl p-6 hover:bg-white/10 hover:border-purple-500/30 transition-all duration-200 cursor-pointer transform hover:scale-[1.02] group"
+                style={{
+                  animationDelay: `${index * 100}ms`,
+                  animation: "fadeInUp 0.6s ease-out forwards",
+                }}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                    <h3 className="font-semibold text-white group-hover:text-purple-300 transition-colors duration-200">
+                      {room.slug}
+                    </h3>
+                  </div>
+                </div>
+
+                <p className="text-sm text-gray-500 mb-3">ID: {room.id}</p>
+
+                <div className="flex items-center space-x-2 text-xs text-gray-400">
+                  <Users className="w-4 h-4" />
+                  <span>Active collaboration</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <div className="mt-8 text-center">
+          <button className="text-gray-400 hover:text-white transition-colors duration-200">
+            Be the first to Create a Room
+          </button>
         </div>
       </div>
+
+      <style jsx>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 }

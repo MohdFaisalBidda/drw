@@ -56,6 +56,7 @@ function Canvas({
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
+      // Clean up any remaining remote cursors when component unmounts
     };
   }, [draw]);
 
@@ -65,12 +66,23 @@ function Canvas({
         canvasRef.current,
         roomId!,
         socket!,
-        allowAnonymousDrawing
+        allowAnonymousDrawing,
+        session?.user?.id
       );
       setDraw(drawInstance);
 
       return () => {
         drawInstance.destroy();
+        Object.values(drawInstance.remoteCursors).forEach((cursor) => {
+          if (cursor.parentNode === document.body) {
+            document.body.removeChild(cursor);
+          }
+        });
+        // Clean up presence UI
+        const presenceUI = document.getElementById("presence-ui-container");
+        if (presenceUI) {
+          presenceUI.remove();
+        }
       };
     }
   }, [canvasRef, roomId, socket]);
@@ -84,7 +96,6 @@ function Canvas({
   };
 
   const handleLeaveRoom = () => {
-    signOut();
     if (socket && socket.readyState === WebSocket.OPEN) {
       socket.send(
         JSON.stringify({
@@ -94,7 +105,7 @@ function Canvas({
       );
       socket.close();
     }
-    window.location.href = "/";
+    window.location.href = "/join";
   };
 
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -191,15 +202,15 @@ function Canvas({
         </button>
       </div>
 
-      <Share2 className="absolute top-4 right-24 w-4 h-4 text-white hover:scale-110 transition-all ease-in-out duration-200 cursor-pointer" />
+      <Share2 className="absolute top-4 left-4 lg:right-32 w-4 h-4 text-white hover:scale-110 transition-all ease-in-out duration-200 cursor-pointer" />
       {/* Leave button */}
       {session?.user ? (
         <button
           onClick={() => setShowLeaveConfirmation(true)}
-          className="fixed top-2 right-2 px-4 py-2 rounded-lg bg-red-500/50 hover:bg-red-500 text-white text-xs font-medium border border-red-400/30 transition-colors duration-200 flex gap-x-2"
+          className="fixed top-2 right-2 px-4 py-2 rounded-lg bg-red-500/50 hover:bg-red-500 text-white text-xs font-medium border border-red-400/30 transition-colors duration-200 flex items-center gap-x-2"
         >
-          <LogOut className="w-4 h-4" />
-          Log out
+          <LogOut className="w-3 h-3 lg:w-4 lg:h-4" />
+          Leave
         </button>
       ) : (
         <button

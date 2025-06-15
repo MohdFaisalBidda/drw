@@ -3,6 +3,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from '@repo/db'
 import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 export const authOptions: NextAuthOptions = {
     adapter: PrismaAdapter(prisma),
@@ -46,12 +47,22 @@ export const authOptions: NextAuthOptions = {
                         throw new Error("Invalid email or password");
                     }
 
-                    console.log("✅ User authenticated:", user.email);
+                    const accessToken = jwt.sign(
+                        {
+                            userId: user.id,
+                            email: user.email,
+                            name: user.name,
+                        },
+                        process.env.NEXTAUTH_SECRET!,
+                        { expiresIn: '24h' }
+                    );
+                    console.log("✅ User authenticated:", user.email, accessToken);
 
                     return {
                         id: user.id,
                         email: user.email,
                         name: user.name,
+                        accessToken
                     };
                 } catch (err) {
                     console.error("🔥 ERROR in authorize():", err);
@@ -64,10 +75,11 @@ export const authOptions: NextAuthOptions = {
     ],
     callbacks: {
         async jwt({ token, user }) {
-            if (user && "id" in user) {
+            if (user && "accessToken" in user) {
                 token.id = user.id
                 token.email = user.email
-                token.name = user.name
+                token.name = user.name,
+                    token.accessToken = user.accessToken as string;
             }
 
             return token
@@ -77,7 +89,8 @@ export const authOptions: NextAuthOptions = {
             if (token && session.user) {
                 session.user.id = token.id as string,
                     session.user.email = token.email as string,
-                session.user.name = token.name as string
+                    session.user.name = token.name as string
+                session.accessToken = token.accessToken as string;
             }
             return session
         },

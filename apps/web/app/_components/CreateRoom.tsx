@@ -8,6 +8,7 @@ import {
   Settings,
   Users,
   Lock,
+  Plus,
 } from "lucide-react";
 import Link from "next/link";
 import { createRoom } from "../../actions";
@@ -16,8 +17,7 @@ import axios from "axios";
 
 export default function CreateRoomPage() {
   const [roomName, setRoomName] = useState("");
-  const [isPrivate, setIsPrivate] = useState(false);
-  const [maxParticipants, setMaxParticipants] = useState("10");
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const { user } = useUser();
   const router = useRouter();
@@ -34,133 +34,89 @@ export default function CreateRoomPage() {
     }
 
     try {
+      setIsLoading(true);
       console.log(user, "user in createRoom");
-      const res = await axios.post("/api/room", {
-        slug: roomName,
-        adminId: user.id,
-      });
+      const res = await createRoom({ slug: roomName });
       console.log(res, "res in createRoom");
       const roomId = res.data?.roomData.id;
       router.push(`/draw/${roomId}`);
     } catch (error) {
       console.log(error, "err");
+    } finally {
+      setIsLoading(false);
     }
-
-    // Demo implementation
   };
 
   return (
-    <div className={styles.gradientBg}>
-      <div className={styles.container}>
-        <div className="max-w-2xl mx-auto">
+    <div
+      className="min-h-screen flex items-center justify-center py-12"
+      style={{ backgroundColor: "#202025" }}
+    >
+      {/* Background Elements */}
+      <div className="fixed inset-0 z-0">
+        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 left-1/4 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+      </div>
+
+      <div className="relative z-10 w-full max-w-2xl mx-auto px-6">
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 mb-4">
-              <PaintBrush className="w-8 h-8 text-white" />
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-green-600 rounded-2xl mb-4 transform hover:scale-105 transition-transform duration-200">
+              <Plus className="w-8 h-8 text-white" />
             </div>
-            <h1>Create Drawing Room</h1>
-            <p className={styles.subheading}>
-              Set up your perfect drawing space
-            </p>
+            <h1 className="text-2xl font-bold text-white mb-2">
+              Create New Room
+            </h1>
+            <p className="text-gray-400">Set up your collaborative workspace</p>
           </div>
 
-          {/* Create Room Form */}
-          <div className={`${styles.card} p-8`}>
-            <form onSubmit={handleCreateRoom} className="space-y-6">
-              <div>
-                <label htmlFor="roomName" className={styles.inputLabel}>
-                  Room Name
+          {/* Form */}
+          <form onSubmit={handleCreateRoom} className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="md:col-span-2">
+                <label
+                  htmlFor="name"
+                  className="block text-sm font-medium text-gray-300 mb-2"
+                >
+                  Room Name *
                 </label>
                 <input
-                  id="roomName"
+                  id="name"
                   type="text"
+                  name="name"
                   value={roomName}
                   onChange={(e) => setRoomName(e.target.value)}
-                  className={styles.input}
-                  placeholder="e.g., Design Workshop"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                  placeholder="Enter room name"
+                  required
                 />
               </div>
-
-              {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label
-                    htmlFor="maxParticipants"
-                    className={styles.inputLabel}
-                  >
-                    Max Participants
-                  </label>
-                  <select
-                    id="maxParticipants"
-                    value={maxParticipants}
-                    onChange={(e) => setMaxParticipants(e.target.value)}
-                    className={styles.input}
-                  >
-                    <option value="5">5 participants</option>
-                    <option value="10">10 participants</option>
-                    <option value="20">20 participants</option>
-                    <option value="50">50 participants</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className={styles.inputLabel}>Room Privacy</label>
-                  <div className="flex items-center mt-2">
-                    <input
-                      type="checkbox"
-                      id="isPrivate"
-                      checked={isPrivate}
-                      onChange={(e) => setIsPrivate(e.target.checked)}
-                      className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-                    />
-                    <label
-                      htmlFor="isPrivate"
-                      className="ml-2 text-sm text-gray-700"
-                    >
-                      Make room private
-                    </label>
-                  </div>
-                </div>
-              </div> */}
-
-              {error && <div className={styles.error}>{error}</div>}
-
-              <button type="submit" className={styles.button.primary}>
-                Create Room
-              </button>
-              <p className="text-center text-sm text-gray-600">
-                want to join an existing room?{" "}
-                <Link href="/" className={styles.link}>
-                  Join room
-                </Link>
-              </p>
-            </form>
-          </div>
-
-          {/* Features Grid */}
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 rounded-xl bg-white/50 backdrop-blur-sm border border-white/20">
-              <div className="flex items-center gap-2 mb-2">
-                <Users className="w-4 h-4 text-purple-600" />
-                <h3 className="font-medium">Collaborative</h3>
-              </div>
-              <p className="text-sm text-gray-600">
-                Draw together in real-time
-              </p>
             </div>
-            <div className="p-4 rounded-xl bg-white/50 backdrop-blur-sm border border-white/20">
-              <div className="flex items-center gap-2 mb-2">
-                <Lock className="w-4 h-4 text-purple-600" />
-                <h3 className="font-medium">Private Rooms</h3>
-              </div>
-              <p className="text-sm text-gray-600">Control who can join</p>
-            </div>
-            <div className="p-4 rounded-xl bg-white/50 backdrop-blur-sm border border-white/20">
-              <div className="flex items-center gap-2 mb-2">
-                <Settings className="w-4 h-4 text-purple-600" />
-                <h3 className="font-medium">Customizable</h3>
-              </div>
-              <p className="text-sm text-gray-600">Set your room preferences</p>
-            </div>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-green-600 hover:bg-green-700 disabled:bg-green-600/50 text-white py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2 transform hover:scale-[1.02] active:scale-[0.98]"
+            >
+              {isLoading ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              ) : (
+                <>
+                  <Plus className="w-5 h-5" />
+                  <span>Create Room</span>
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Footer */}
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => router.push("join")}
+              className="text-gray-400 hover:text-white text-sm transition-colors duration-200"
+            >
+              ← Back to rooms
+            </button>
           </div>
         </div>
       </div>
