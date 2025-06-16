@@ -18,7 +18,8 @@ interface Room {
   members: Set<Client>;
 }
 
-const wss = new WebSocketServer({ port: 8080 });
+const PORT = (process.env.PORT || 8080) as number;
+const wss = new WebSocketServer({ port: PORT });
 const rooms: Record<string, Room> = {};
 
 // Heartbeat interval
