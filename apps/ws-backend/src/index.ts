@@ -1,3 +1,4 @@
+import http from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { prisma } from '@repo/db';
 import jwt, { JwtPayload } from 'jsonwebtoken';
@@ -19,7 +20,11 @@ interface Room {
 }
 
 const PORT = (process.env.PORT || 8080) as number;
-const wss = new WebSocketServer({ port: PORT });
+const server = http.createServer();
+const wss = new WebSocketServer({ server });
+server.listen(PORT, () => {
+  console.log(`WebSocket server running on port ${PORT}`);
+});
 const rooms: Record<string, Room> = {};
 
 // Heartbeat interval
