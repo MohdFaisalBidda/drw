@@ -7,13 +7,20 @@ import { ArrowRight, Paintbrush, PenTool, Plus, Users } from "lucide-react";
 import Link from "next/link";
 import { useUser } from "../../provider/UserProvider";
 import { getToken } from "next-auth/jwt";
+import { useSession } from "next-auth/react";
 
 export default function JoinRoomPage({ allRooms }: { allRooms: any }) {
   const [roomId, setRoomId] = useState("");
   const [error, setError] = useState("");
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const { data: session } = useSession();
   const { user } = useUser();
+
+  useEffect(() => {
+    console.log(session, "session in roomCanvas");
+    localStorage.setItem("token", session?.accessToken as string);
+  }, [session]);
 
   const handleJoinRoom = async () => {
     if (!roomId.trim()) {

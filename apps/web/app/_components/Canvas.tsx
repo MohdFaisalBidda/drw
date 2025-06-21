@@ -85,7 +85,7 @@ function Canvas({
         }
       };
     }
-  }, [canvasRef, roomId, socket]);
+  }, [canvasRef, roomId, socket,session]);
 
   useEffect(() => {
     draw?.setTool(selectedTool as Tool);

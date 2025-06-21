@@ -69,6 +69,12 @@ wss.on('connection', async (ws: Client, req) => {
   const token = queryParams.get('token') || "";
   console.log(token, "token in ws");
 
+  if (!token || token === "undefined") {
+    console.log('No valid token provided');
+    ws.close(4003, 'Authentication failed');
+    return;
+  }
+
   try {
     console.log(url, token, "token in ws");
 
@@ -219,25 +225,25 @@ async function leaveRoom(ws: Client) {
     broadcastPresence(ws.currentRoom);
   }
 
-  if (room?.members.size === 0) {
-    delete rooms[ws.currentRoom];
-    try {
-      await prisma.shape.deleteMany({
-        where: {
-          roomId: ws.currentRoom
-        }
-      })
+  // if (room?.members.size === 0) {
+  //   delete rooms[ws.currentRoom];
+  //   try {
+  //     await prisma.shape.deleteMany({
+  //       where: {
+  //         roomId: ws.currentRoom
+  //       }
+  //     })
 
-      await prisma.room.delete({
-        where: {
-          id: ws.currentRoom
-        },
-      })
-    } catch (error) {
-      console.log(error, "error in cleaning up room");
+  //     await prisma.room.delete({
+  //       where: {
+  //         id: ws.currentRoom
+  //       },
+  //     })
+  //   } catch (error) {
+  //     console.log(error, "error in cleaning up room");
 
-    }
-  }
+  //   }
+  // }
 
   ws.currentRoom = undefined;
 }
