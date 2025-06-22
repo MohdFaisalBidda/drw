@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { Menu, PenTool, UserIcon, X } from "lucide-react";
 import { appName } from "@/utils";
+import Image from "next/image";
 
 export default function Header() {
   const router = useRouter();
@@ -31,9 +32,14 @@ export default function Header() {
       <div className="max-w-6xl mx-auto px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link href="/">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
-                <PenTool className="w-5 h-5 text-white" />
+            <div className="flex items-center space-x-4">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center">
+                <Image
+                  src={"/logo1.png"}
+                  alt={"logo"}
+                  width={100}
+                  height={100}
+                />
               </div>
               <span className="text-3xl font-bagel-fat font-semibold text-white">
                 {appName}

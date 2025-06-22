@@ -86,7 +86,12 @@ export class Draw {
       this.redraw();
     }
 
-    if (!this.allowAnonymous) {
+    if (!this.allowAnonymous && this.socket) {
+      this.socket.send(JSON.stringify({
+        type: 'REQUEST_PRESENCE_UPDATE',
+        roomId: this.roomId
+      }));
+
       await this.syncInitialState();
     }
   }
@@ -248,6 +253,7 @@ export class Draw {
 
   private updatePresenceUI(users: Array<{ id: string, name: string }>) {
     // Filter out current user
+    console.log(this.userId, "this.userId in updatePresenceUI");
     const otherUsers = users.filter(user => user.id !== this.userId);
 
     // Remove existing UI if it exists
@@ -257,7 +263,10 @@ export class Draw {
     }
 
     // Don't show if no other users
-    if (otherUsers.length === 0) return;
+    if (otherUsers.length === 0) {
+      console.log('No other users in room');
+      return;
+    }
 
     // Create container
     const container = document.createElement('div');
@@ -276,7 +285,7 @@ export class Draw {
     const usersToShow = otherUsers.slice(0, maxVisible);
     const overflowCount = otherUsers.length - maxVisible;
 
-    usersToShow.forEach((user, index) => {
+    users.forEach((user, index) => {
       const hue = parseInt(user.id.replace(/[^\d]/g, '').slice(0, 3)) % 360;
       const userColor = `hsl(${hue}, 80%, 60%)`;
       const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
@@ -361,6 +370,7 @@ export class Draw {
     document.body.appendChild(container);
 
     this.updateRemoteCursors(users);
+    this.sendCursorPosition()
   }
 
   private updateRemoteCursors(users: Array<{ id: string, name: string }>) {
@@ -517,6 +527,11 @@ export class Draw {
           if (message.type === 'DELETE_SHAPE') {
             this.shapes = this.shapes.filter((shape) => shape.id !== message.payload.shapeId);
             this.redraw();
+          }
+
+          if (message.type === 'PRESENCE_UPDATE') {
+            console.log('Received presence update:', message.payload);
+            this.updatePresenceUI(message.payload.users);
           }
 
           if (message.type === 'SHAPE_UPDATED') {

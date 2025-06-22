@@ -165,8 +165,9 @@ async function joinRoom(ws: Client, roomId: string) {
   rooms[roomId].members.add(ws);
   ws.name = ws.name;
   ws.currentRoom = roomId;
-  console.log(ws.currentRoom, roomId, "join room here");
   broadcastPresence(roomId)
+
+  console.log(ws.currentRoom, roomId, "join room here");
 }
 
 async function broadcastPresence(roomId: string) {

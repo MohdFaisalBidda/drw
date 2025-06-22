@@ -25,6 +25,8 @@ import {
 import Link from "next/link";
 import { appName } from "@/utils";
 import Header from "./_components/Header";
+import Image from "next/image";
+import Footer from "./_components/Footer";
 
 function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -212,52 +214,7 @@ function App() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="relative z-10 py-12 border-t border-white/10">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-8">
-            <div className="flex flex-col space-y-3 items-center md:items-start">
-              <div className="flex space-x-3 items-center ">
-                <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
-                  <PenTool className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-3xl font-bagel-fat font-semibold text-white">{appName}</span>
-              </div>
-              <p className="text-gray-400 text-sm leading-relaxed text-center md:text-start">
-                The collaborative whiteboard <br/>for visual thinkers and creative
-                teams.
-              </p>
-            </div>
-
-            <div className="flex space-x-6">
-              <a
-                href="#"
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                <Github className="w-5 h-5" />
-              </a>
-              <a
-                href="#"
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                <Twitter className="w-5 h-5" />
-              </a>
-              <a
-                href="#"
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                <Mail className="w-5 h-5" />
-              </a>
-            </div>
-          </div>
-
-          <div className="mt-8 pt-6 border-t border-white/10 text-center">
-            <p className="text-gray-400 text-sm">
-              &copy; 2025 SketchBoard. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

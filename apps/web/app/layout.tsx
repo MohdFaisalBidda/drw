@@ -14,7 +14,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Drw",
+  title: "Drw - Collaborative Whiteboard for Visual Creativity",
   description:
     "A collaborative whiteboard for visual thinkers and creative teams.",
 };
