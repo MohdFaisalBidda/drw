@@ -17,6 +17,7 @@ import { PropertiesPanel } from "./PropertiesPanel";
 import { motion } from "framer-motion";
 import { saveShapesToDB } from "@/lib/indexDB";
 import { signOut, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 interface CanvasProps {
   roomId?: string;
@@ -44,6 +45,7 @@ function Canvas({
   } | null>(null);
   const [prompt, setPrompt] = useState("");
   const [isPanelOpen, setIsPanelOpen] = useState(true);
+  const router = useRouter();
 
   // In your Canvas component
   useEffect(() => {
@@ -85,7 +87,7 @@ function Canvas({
         }
       };
     }
-  }, [canvasRef, roomId, socket,session]);
+  }, [canvasRef, roomId, socket, session]);
 
   useEffect(() => {
     draw?.setTool(selectedTool as Tool);
@@ -105,7 +107,7 @@ function Canvas({
       );
       socket.close();
     }
-    window.location.href = "/join";
+    router.push("/join");
   };
 
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -214,7 +216,7 @@ function Canvas({
         </button>
       ) : (
         <button
-          onClick={() => setShowLeaveConfirmation(true)}
+          onClick={() => router.push("/sign-in")}
           className="fixed top-2 right-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500/80 text-white text-xs font-medium border border-none transition-colors duration-200 flex gap-x-2"
         >
           Sign in

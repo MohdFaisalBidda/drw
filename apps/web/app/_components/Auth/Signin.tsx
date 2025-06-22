@@ -12,6 +12,7 @@ import {
   LogIn,
   Mail,
   Paintbrush,
+  PenTool,
   Sparkles,
 } from "lucide-react";
 import Link from "next/link";
@@ -189,6 +190,26 @@ function SigninPage() {
               )}
             </button>
           </form>
+
+          {/* Guest Access */}
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-white/10"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-[#202025] text-gray-400">or</span>
+              </div>
+            </div>
+
+            <button
+              onClick={()=>router.push("/drw")}
+              className="w-full mt-4 bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded-lg font-medium transition-all duration-200 flex items-center justify-center space-x-2 transform hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <PenTool className="w-4 h-4" />
+              <span>Try without login</span>
+            </button>
+          </div>
 
           {/* Footer */}
           <div className="mt-6 text-center">

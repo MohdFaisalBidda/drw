@@ -24,11 +24,11 @@ export default function Header() {
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrollY > 50
-          ? "bg-[#202025]/90 backdrop-blur-xl border-b border-white/5"
+          ? "md:bg-black/5 shadow-white drop-shadow-xl backdrop-blur-md md:rounded-xl "
           : "bg-transparent"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link href="/">
             <div className="flex items-center space-x-3">
@@ -48,12 +48,7 @@ export default function Header() {
             >
               Features
             </a>
-            <a
-              href="#demo"
-              className="text-gray-400 hover:text-white transition-colors duration-200"
-            >
-              Demo
-            </a>
+
             {user ? (
               <div className="flex items-center space-x-4">
                 <Link href="/join">
@@ -92,20 +87,15 @@ export default function Header() {
 
       {/* Mobile Menu */}
       {isMenuOpen && (
-        <div className="md:hidden bg-[#202025]/95 backdrop-blur-xl border-b border-white/5">
-          <div className="px-6 py-6 space-y-4">
+        <div className="md:hidden backdrop-blur-sm border-b border-white/5">
+          <div className="px-6 py-6 flex flex-col gap-y-4">
             <a
               href="#features"
               className="block py-2 text-gray-400 hover:text-white transition-colors"
             >
               Features
             </a>
-            <a
-              href="#demo"
-              className="block py-2 text-gray-400 hover:text-white transition-colors"
-            >
-              Demo
-            </a>
+
             {user ? (
               <div className="flex flex-col space-y-4">
                 <Link href="/join">

@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import bcrypt from "bcrypt";
 import { getServerSession } from "next-auth";
 import authenticate from "@/lib/authenticate";
+import { revalidatePath } from "next/cache";
 
 export interface ICreateRoom {
     slug: string;
@@ -88,7 +89,66 @@ export const createRoom = async ({ slug }: ICreateRoom) => {
     }
 };
 
+export const deleteRoom = async (roomId: string) => {
+    const session = await authenticate();
+    if (!session?.user) {
+        return {
+            success: false,
+            error: "Unauthorized"
+        }
+    }
 
+    try {
+        // Delete all shapes first
+        await prisma.shape.deleteMany({
+            where: { roomId }
+        });
+
+        // Then delete the room
+        await prisma.room.delete({
+            where: { id: roomId }
+        });
+
+        // Revalidate the home page to reflect changes
+        revalidatePath("/");
+        revalidatePath(`/draw/${roomId}`);
+
+        return {
+            success: true,
+            message: "Room deleted successfully"
+        };
+    } catch (error) {
+        console.error("Error deleting room:", error);
+        return {
+            success: false,
+            error: "Failed to delete room"
+        };
+    }
+};
+
+export const refreshRooms = async () => {
+    const session = await authenticate();
+    if (!session?.user) {
+        return {
+            success: false,
+            error: "Unauthorized"
+        }
+    }
+
+    try {
+        revalidatePath("/");
+        return {
+            success: true,
+            message: "Rooms refreshed successfully"
+        };
+    } catch (error) {
+        console.error("Error refreshing rooms:", error);
+        return {
+            success: false,
+            error: "Failed to refresh rooms"
+        };
+    }
+};
 
 export const getAllRooms = async () => {
     const session = await authenticate()
@@ -113,6 +173,29 @@ export const getAllRooms = async () => {
             success: false,
             error
         }
+
+    }
+}
+
+export const checkRoomExists = async (roomId: string) => {
+    const session = await authenticate()
+    if (!session?.user) {
+        return false
+    }
+
+    try {
+        const rooms = await prisma.room.findUnique({
+            where: {
+                id: roomId
+            }
+        })
+        if (!rooms) {
+            return false
+        }
+        return true
+    } catch (error) {
+        console.log(error);
+        return false
 
     }
 }

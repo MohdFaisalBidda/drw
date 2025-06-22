@@ -1,12 +1,12 @@
 // hooks/useWebSocket.ts
 "use client";
 
+import { webSocketManager } from "@/lib/websocket";
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 
-export function useWebSocket(roomId: string) {
+export function useWebSocket(roomId?: string) {
   const { data: session } = useSession();
-  const [socket, setSocket] = useState<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,40 +17,39 @@ export function useWebSocket(roomId: string) {
     }
 
     const wsUrl = `${process.env.NEXT_PUBLIC_WS_URL}?token=${encodeURIComponent(session.accessToken)}`;
-    const ws = new WebSocket(wsUrl);
 
-    ws.onopen = () => {
-      setSocket(ws);
-      setIsConnected(true);
-      setError(null);
-      ws.send(JSON.stringify({ type: "JOIN_ROOM", payload: { roomId } }));
-    };
+    const connect = async () => {
+      try {
+        await webSocketManager.connect(wsUrl);
+        setIsConnected(true);
+        setError(null);
 
-    ws.onclose = () => {
-      setSocket(null);
-      setIsConnected(false);
-      setError("Connection closed");
-    };
+        if (roomId) {
+          webSocketManager.sendMessage("JOIN_ROOM", { roomId });
+        }
+      } catch (error: any) {
+        setError(error.message);
+        setIsConnected(false);
+      }
+    }
 
-    ws.onerror = () => {
-      setSocket(null);
-      setIsConnected(false);
-      setError("Connection error");
-    };
+    connect();
 
     return () => {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: "LEAVE_ROOM", payload: { roomId } }));
-        ws.close();
+      if (roomId) {
+        webSocketManager.sendMessage("LEAVE_ROOM", { roomId });
       }
     };
   }, [session?.accessToken, roomId]);
 
   const sendMessage = (type: string, payload: any) => {
-    if (socket && socket.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify({ type, payload }));
-    }
+    webSocketManager.sendMessage(type, payload);
+  }
+
+  const addListener = (type: string, callback: Function) => {
+    webSocketManager.addListener(type, callback);
+    return () => webSocketManager.removeListener(type, callback);
   };
 
-  return { socket, isConnected, error, sendMessage };
+  return { isConnected, error, sendMessage, addListener, socket: webSocketManager.socket };
 }

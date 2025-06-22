@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { styles } from "../../styles/shared";
 import { ArrowRight, Paintbrush, PenTool, Plus, Users } from "lucide-react";
-import Link from "next/link";
 import { useUser } from "../../provider/UserProvider";
-import { getToken } from "next-auth/jwt";
 import { useSession } from "next-auth/react";
+import { Room } from "@prisma/client";
+import { getAllRooms } from "@/actions";
 
-export default function JoinRoomPage({ allRooms }: { allRooms: any }) {
+export default function JoinRoomPage({ allRooms }: { allRooms: Room[] }) {
+  const [rooms, setRooms] = useState<Room[]>(allRooms);
   const [roomId, setRoomId] = useState("");
   const [error, setError] = useState("");
   const router = useRouter();
@@ -20,6 +20,30 @@ export default function JoinRoomPage({ allRooms }: { allRooms: any }) {
   useEffect(() => {
     console.log(session, "session in roomCanvas");
     localStorage.setItem("token", session?.accessToken as string);
+  }, [session]);
+
+  useEffect(() => {
+    localStorage.setItem("token", session?.accessToken as string);
+
+    const fetchRooms = async () => {
+      try {
+        const response = await getAllRooms();
+        if (response.success && response.data?.rooms) {
+          setRooms(response.data.rooms);
+        }
+      } catch (error) {
+        console.error("Error fetching rooms:", error);
+      }
+    };
+
+    // Initial fetch
+    fetchRooms();
+
+    // Set up interval for pooling (every 5 seconds)
+    const intervalId = setInterval(fetchRooms, 3000);
+
+    // Clean up interval on unmount
+    return () => clearInterval(intervalId);
   }, [session]);
 
   const handleJoinRoom = async () => {
@@ -147,7 +171,7 @@ export default function JoinRoomPage({ allRooms }: { allRooms: any }) {
           </h2>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {allRooms.map((room: any, index: number) => (
+            {rooms.map((room: any, index: number) => (
               <div
                 key={room.id}
                 onClick={() => setRoomId(room.id)}
@@ -179,9 +203,11 @@ export default function JoinRoomPage({ allRooms }: { allRooms: any }) {
 
         {/* Navigation */}
         <div className="mt-8 text-center">
-          <button className="text-gray-400 hover:text-white transition-colors duration-200">
-            Be the first to Create a Room
-          </button>
+          {rooms.length === 0 && (
+            <button className="text-gray-400 hover:text-white transition-colors duration-200">
+              Be the first to Create a Room
+            </button>
+          )}
         </div>
       </div>
 

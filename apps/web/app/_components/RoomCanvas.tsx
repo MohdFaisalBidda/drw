@@ -1,219 +1,181 @@
+// components/RoomCanvas.tsx
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Canvas from "./Canvas";
-import { useSession } from "next-auth/react";
-
-// WebSocket close codes and their meanings
-const WS_CLOSE_CODES = {
-  1000: "Normal Closure",
-  1001: "Going Away",
-  1002: "Protocol Error",
-  1003: "Unsupported Data",
-  1004: "Reserved",
-  1005: "No Status Received",
-  1006: "Abnormal Closure",
-  1007: "Invalid frame payload data",
-  1008: "Policy Violation",
-  1009: "Message too big",
-  1010: "Missing Extension",
-  1011: "Internal Error",
-  1012: "Service Restart",
-  1013: "Try Again Later",
-  1014: "Bad Gateway",
-  1015: "TLS Handshake",
-};
+import { useRouter } from "next/navigation";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import { ArrowRight, Home, Search, Plus, AlertTriangle } from "lucide-react"; 
+import Link from "next/link";
+import { checkRoomExists } from "@/actions";
 
 function RoomCanvas({ roomId }: { roomId: string }) {
-  const { data: session } = useSession();
-  const [socket, setSocket] = useState<WebSocket>();
-  const [isConnecting, setIsConnecting] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [connectionDetails, setConnectionDetails] = useState<string>("");
-  const [initialized, setInitialized] = useState(false);
+  const router = useRouter();
+  const { isConnected, error, addListener, socket } = useWebSocket(roomId);
+  const [roomExists, setRoomExists] = useState<boolean | null>(null);
+  const [connectionDetails, setConnectionDetails] = useState("");
+  const [isCheckingRoom, setIsCheckingRoom] = useState(true);
 
   useEffect(() => {
-    let ws: WebSocket;
-    let heartBeatInterval: NodeJS.Timeout | null = null;
+    console.log(roomId, "roomId in RoomCanvas");
 
-    const connectWebSocket = () => {
-      if (ws) {
-        console.log("Closing existing connection before reconnecting");
-        ws.close();
-      }
-
+    const verifyRoom = async () => {
       try {
-        // const token = localStorage.getItem("token");
-        console.log(session,"session?.accessToken");
-        
-        const token = localStorage.getItem("token");
-        console.log(token, "token in ws");
-        const wsUrl = `${process.env.NEXT_PUBLIC_WS_URL}?token=${token}`;
-        console.log("Attempting to connect to:", wsUrl);
+        setIsCheckingRoom(true);
+        const exists = await checkRoomExists(roomId);
+        setRoomExists(exists);
+        console.log(exists, "exists in verifyRoom");
 
-        ws = new WebSocket(wsUrl);
-
-        ws.addEventListener("open", () => {
-          console.log("WebSocket connection established successfully");
-          setSocket(ws);
-          setIsConnecting(false);
-          setError(null);
-          setConnectionDetails("Connected successfully");
-
-          if (ws) {
-            const joinMessage = {
-              type: "JOIN_ROOM",
-              payload: {
-                roomId,
-              },
-            };
-            console.log("Sending JOIN_ROOM message:", joinMessage);
-            ws.send(JSON.stringify(joinMessage));
-          }
-        });
-
-        ws.addEventListener("message", (e) => {
-          const message = JSON.parse(e.data);
-          console.log(message, "message in ws addEventlistenere");
-        });
-
-        ws.addEventListener("close", (event) => {
-          clearInterval(heartBeatInterval!);
-          const closeCode = event.code;
-          const closeReason = event.reason || "No reason provided";
-          const wasClean = event.wasClean;
-          const closureDescription =
-            WS_CLOSE_CODES[closeCode as keyof typeof WS_CLOSE_CODES] ||
-            "Unknown Code";
-
-          const closeDetails = `
-            WebSocket closed:
-            - Code: ${closeCode} (${closureDescription})
-            - Reason: ${closeReason}
-            - Clean Closure: ${wasClean}
-            - Timestamp: ${new Date().toISOString()}
-          `;
-
-          // console.error(closeDetails);
-          setConnectionDetails(closeDetails);
-
-          setIsConnecting(false);
-          // setError(
-          //   `Connection closed: ${closureDescription}. Please refresh the page.`
-          // );
-        });
-
-        ws.addEventListener("error", (event) => {
-          clearInterval(heartBeatInterval!);
-          const errorDetails = `
-            WebSocket error occurred:
-            - Timestamp: ${new Date().toISOString()}
-            - Event: ${JSON.stringify(event)}
-          `;
-
-          console.log("WebSocket error:", errorDetails);
-          setConnectionDetails(errorDetails);
-
-          setIsConnecting(false);
-          // setError("Connection error. Please refresh the page.");
-        });
+        if (!exists) {
+          return;
+        }
       } catch (err) {
-        clearInterval(heartBeatInterval!);
-        const errorMsg = err instanceof Error ? err.message : "Unknown error";
-        const errorDetails = `
-          Failed to create WebSocket connection:
-          - Error: ${errorMsg}
-          - Timestamp: ${new Date().toISOString()}
-        `;
-
-        console.error(errorDetails);
-        setConnectionDetails(errorDetails);
-
-        setIsConnecting(false);
-        setError("Failed to establish connection. Please refresh the page.");
+        console.error("Error checking room existence:", err);
+        setRoomExists(false);
+      } finally {
+        setIsCheckingRoom(false);
       }
     };
 
-    connectWebSocket();
+    verifyRoom();
+
+    const cleanupRoomDeleted = addListener(
+      "ROOM_DELETED",
+      (payload: { roomId: string }) => {
+        if (payload.roomId === roomId) {
+          setRoomExists(false);
+        }
+      }
+    );
 
     return () => {
-      clearInterval(heartBeatInterval!);
-
-      if (ws) {
-        if (ws.readyState === WebSocket.OPEN) {
-          console.log("Sending LEAVE_ROOM message before cleanup");
-          ws.send(
-            JSON.stringify({
-              type: "LEAVE_ROOM",
-              payload: {
-                roomId,
-              },
-            })
-          );
-        }
-        ws.close();
-      }
+      cleanupRoomDeleted();
     };
   }, [roomId]);
 
-  if (error) {
+ if (isCheckingRoom) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-gray-100">
-        <div className="bg-white p-6 rounded-lg shadow-lg max-w-2xl">
-          <p className="text-red-500 mb-4">{error}</p>
-          <div className="bg-gray-100 p-4 rounded mb-4 whitespace-pre-wrap font-mono text-sm">
-            {connectionDetails}
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: "#202025" }}
+      >
+        <div className="fixed inset-0 z-0">
+          <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-1/4 left-1/4 w-80 h-80 bg-purple-600/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        </div>
+
+        <div className="relative z-10 w-full max-w-md mx-auto px-6 text-center">
+          <div className="animate-pulse flex justify-center mb-6">
+            <div className="h-20 w-20 rounded-2xl bg-purple-600/20 flex items-center justify-center">
+              <ArrowRight className="h-10 w-10 text-purple-600 animate-bounce" />
+            </div>
           </div>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            Refresh Page
-          </button>
+          <h2 className="text-2xl font-bold text-white mb-2">Checking Room...</h2>
+          <p className="text-gray-400">Verifying room existence</p>
         </div>
       </div>
     );
   }
 
-  if (isConnecting) {
+  if (roomExists === false || error) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-gray-100">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-          <span className="block mt-2">Connecting to canvas...</span>
-          <span className="block mt-2">Might take 1-2 minutes to connect as server is deployed on render.</span>
-          <div className="mt-4 text-sm text-gray-600">{connectionDetails}</div>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: "#202025" }}
+      >
+        {/* Background Elements */}
+        <div className="fixed inset-0 z-0">
+          <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-red-600/10 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-1/4 left-1/4 w-80 h-80 bg-red-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        </div>
+
+        <div className="relative z-10 w-full max-w-md mx-auto px-6">
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl text-center">
+            {/* Icon */}
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-red-600/20 rounded-2xl mb-6 transform hover:scale-105 transition-transform duration-200">
+              <AlertTriangle className="w-10 h-10 text-red-400" />
+            </div>
+
+            {/* Content */}
+            <div className="space-y-4 mb-8">
+              <h1 className="text-2xl font-bold text-white">
+                {error ? "Connection Error" : "Room Not Found"}
+              </h1>
+              <p className="text-gray-400 leading-relaxed">
+                {error
+                  ? "Couldn't establish connection to the room."
+                  : `The room may doesn't exist or may have been deleted.`}
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-col gap-y-4">
+              <Link href="/create-room" passHref>
+                <button className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2 transform hover:scale-[1.02] active:scale-[0.98]">
+                  <Plus className="w-4 h-4" />
+                  <span>Create New Room</span>
+                </button>
+              </Link>
+
+              <Link href="/join" passHref>
+                <button className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded-lg font-medium transition-all duration-200 flex items-center justify-center space-x-2 transform hover:scale-[1.02] active:scale-[0.98]">
+                  <Search className="w-4 h-4" />
+                  <span>Browse Available Rooms</span>
+                </button>
+              </Link>
+            </div>
+
+            {/* Footer */}
+            <div className="mt-6 pt-6 border-t border-white/10">
+              <button
+                onClick={() => router.push("/")}
+                className="text-gray-400 hover:text-white text-sm transition-colors duration-200 flex items-center justify-center space-x-1"
+              >
+                <Home className="w-4 h-4" />
+                <span>Back to home</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
-  if (!socket) {
+  if (!isConnected) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-gray-100">
-        <div className="bg-white p-6 rounded-lg shadow-lg">
-          <p className="text-red-500 mb-4">
-            Connection lost. Please refresh the page.
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: "#202025" }}
+      >
+        <div className="fixed inset-0 z-0">
+          <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-1/4 left-1/4 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        </div>
+
+        <div className="relative z-10 w-full max-w-md mx-auto px-6 text-center">
+          <div className="animate-pulse flex justify-center mb-6">
+            <div className="h-20 w-20 rounded-2xl bg-blue-600/20 flex items-center justify-center">
+              <ArrowRight className="h-10 w-10 text-blue-400 animate-bounce" />
+            </div>
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-2">
+            Connecting to Room...
+          </h2>
+          <p className="text-gray-400 mb-6">
+            Establishing connection to the canvas server
           </p>
-          <div className="bg-gray-100 p-4 rounded mb-4 whitespace-pre-wrap font-mono text-sm">
-            {connectionDetails}
+          <div className="w-full bg-white/5 rounded-full h-2">
+            <div
+              className="bg-blue-500 h-2 rounded-full animate-progress"
+              style={{ width: "60%" }}
+            ></div>
           </div>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            Refresh Page
-          </button>
         </div>
       </div>
     );
   }
 
-  return (
-    <>
-      <Canvas roomId={roomId} socket={socket} />
-    </>
-  );
+  return <Canvas roomId={roomId} socket={socket as WebSocket} />;
 }
 
 export default RoomCanvas;

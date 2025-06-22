@@ -757,7 +757,7 @@ export class Draw {
 
       this.shapes = this.shapes.filter(s => s.id !== shapeToDelete?.id);
       this.socket?.send(JSON.stringify({
-        type: "eraser",
+        type: "DELETE_SHAPE",
         id: shapeToDelete?.id,
         roomId: this.roomId
       }));

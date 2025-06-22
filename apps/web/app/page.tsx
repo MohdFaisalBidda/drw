@@ -18,6 +18,9 @@ import {
   Lock,
   Layers,
   Sparkles,
+  Github,
+  Mail,
+  Twitter,
 } from "lucide-react";
 import Link from "next/link";
 import { appName } from "@/utils";
@@ -52,24 +55,24 @@ function App() {
       description:
         "Zero-latency synchronization ensures everyone stays in sync across all devices",
     },
-    {
-      icon: Layers,
-      title: "Smart Organization",
-      description:
-        "Organize complex diagrams with intelligent layering and grouping capabilities",
-    },
-    {
-      icon: Globe,
-      title: "Cloud Native",
-      description:
-        "Access your work from anywhere with reliable cloud-based architecture",
-    },
-    {
-      icon: Lock,
-      title: "Enterprise Security",
-      description:
-        "Bank-grade encryption and security measures keep your ideas protected",
-    },
+    // {
+    //   icon: Layers,
+    //   title: "Smart Organization",
+    //   description:
+    //     "Organize complex diagrams with intelligent layering and grouping capabilities",
+    // },
+    // {
+    //   icon: Globe,
+    //   title: "Cloud Native",
+    //   description:
+    //     "Access your work from anywhere with reliable cloud-based architecture",
+    // },
+    // {
+    //   icon: Lock,
+    //   title: "Enterprise Security",
+    //   description:
+    //     "Bank-grade encryption and security measures keep your ideas protected",
+    // },
   ];
 
   return (
@@ -91,19 +94,20 @@ function App() {
             <div className="inline-flex items-center space-x-2 bg-white/5 border border-white/10 rounded-full px-4 py-2 text-sm">
               <Sparkles className="w-4 h-4 text-purple-400" />
               <span className="text-gray-300">
-                Now with AI-powered suggestions
+                Now with Real Time Collaboration
               </span>
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight text-white">
               Collaborative Whiteboard
               <br />
-              <span className="text-purple-400">for Visual Teams</span>
+              <span className="text-purple-400">for Visual Creativity</span>
             </h1>
 
             <p className="text-lg lg:text-xl text-gray-400 leading-relaxed max-w-3xl mx-auto">
-              Create beautiful hand-drawn diagrams with your team in real-time.
-              The most intuitive whiteboard tool for visual collaboration.
+              Draw, sketch, and brainstorm together in real-time. Designed for
+              seamless visual collaboration—whether you're working with
+              colleagues, classmates, or friends.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-6">
@@ -120,17 +124,6 @@ function App() {
                 </div>
                 <span>Watch Demo</span>
               </button>
-            </div>
-
-            <div className="flex items-center justify-center space-x-8 pt-6 text-sm text-gray-500">
-              <div className="flex items-center space-x-2">
-                <Check className="w-4 h-4 text-green-400" />
-                <span>Free forever plan</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Check className="w-4 h-4 text-green-400" />
-                <span>No credit card required</span>
-              </div>
             </div>
           </div>
         </div>
@@ -193,27 +186,6 @@ function App() {
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="relative z-10 py-16">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="grid md:grid-cols-4 gap-8 text-center">
-            {[
-              { number: "50K+", label: "Active Users" },
-              { number: "1M+", label: "Diagrams Created" },
-              { number: "99.9%", label: "Uptime" },
-              { number: "24/7", label: "Support" },
-            ].map((stat, index) => (
-              <div key={index} className="space-y-2">
-                <div className="text-3xl lg:text-4xl font-bold text-purple-400">
-                  {stat.number}
-                </div>
-                <div className="text-gray-400 text-sm">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* CTA Section */}
       <section className="relative z-10 py-24">
         <div className="max-w-4xl mx-auto px-6 lg:px-8 text-center">
@@ -229,11 +201,11 @@ function App() {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors duration-200">
-                Start Free Trial
+                Try without login
               </button>
 
               <button className="border border-white/20 text-white px-8 py-3 rounded-lg font-semibold hover:bg-white/5 transition-colors duration-200">
-                Schedule Demo
+                Sign in
               </button>
             </div>
           </div>
@@ -243,137 +215,46 @@ function App() {
       {/* Footer */}
       <footer className="relative z-10 py-12 border-t border-white/10">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div className="space-y-4">
-              <div className="flex items-center space-x-3">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-8">
+            <div className="flex flex-col space-y-3 items-center md:items-start">
+              <div className="flex space-x-3 items-center ">
                 <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
                   <PenTool className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-xl font-semibold text-white">
-                  SketchBoard
-                </span>
+                <span className="text-3xl font-bagel-fat font-semibold text-white">{appName}</span>
               </div>
-              <p className="text-gray-400 text-sm leading-relaxed">
-                The collaborative whiteboard for visual thinkers and creative
+              <p className="text-gray-400 text-sm leading-relaxed text-center md:text-start">
+                The collaborative whiteboard <br/>for visual thinkers and creative
                 teams.
               </p>
             </div>
 
-            <div>
-              <h4 className="text-white font-medium mb-3">Product</h4>
-              <div className="space-y-2">
-                <a
-                  href="#"
-                  className="block text-gray-400 hover:text-white transition-colors text-sm"
-                >
-                  Features
-                </a>
-                <a
-                  href="#"
-                  className="block text-gray-400 hover:text-white transition-colors text-sm"
-                >
-                  Pricing
-                </a>
-                <a
-                  href="#"
-                  className="block text-gray-400 hover:text-white transition-colors text-sm"
-                >
-                  Templates
-                </a>
-                <a
-                  href="#"
-                  className="block text-gray-400 hover:text-white transition-colors text-sm"
-                >
-                  API
-                </a>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="text-white font-medium mb-3">Company</h4>
-              <div className="space-y-2">
-                <a
-                  href="#"
-                  className="block text-gray-400 hover:text-white transition-colors text-sm"
-                >
-                  About
-                </a>
-                <a
-                  href="#"
-                  className="block text-gray-400 hover:text-white transition-colors text-sm"
-                >
-                  Blog
-                </a>
-                <a
-                  href="#"
-                  className="block text-gray-400 hover:text-white transition-colors text-sm"
-                >
-                  Careers
-                </a>
-                <a
-                  href="#"
-                  className="block text-gray-400 hover:text-white transition-colors text-sm"
-                >
-                  Press
-                </a>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="text-white font-medium mb-3">Support</h4>
-              <div className="space-y-2">
-                <a
-                  href="#"
-                  className="block text-gray-400 hover:text-white transition-colors text-sm"
-                >
-                  Help Center
-                </a>
-                <a
-                  href="#"
-                  className="block text-gray-400 hover:text-white transition-colors text-sm"
-                >
-                  Contact
-                </a>
-                <a
-                  href="#"
-                  className="block text-gray-400 hover:text-white transition-colors text-sm"
-                >
-                  Status
-                </a>
-                <a
-                  href="#"
-                  className="block text-gray-400 hover:text-white transition-colors text-sm"
-                >
-                  Security
-                </a>
-              </div>
+            <div className="flex space-x-6">
+              <a
+                href="#"
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <Github className="w-5 h-5" />
+              </a>
+              <a
+                href="#"
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <Twitter className="w-5 h-5" />
+              </a>
+              <a
+                href="#"
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <Mail className="w-5 h-5" />
+              </a>
             </div>
           </div>
 
-          <div className="mt-8 pt-6 border-t border-white/10 flex flex-col md:flex-row justify-between items-center">
+          <div className="mt-8 pt-6 border-t border-white/10 text-center">
             <p className="text-gray-400 text-sm">
               &copy; 2025 SketchBoard. All rights reserved.
             </p>
-            <div className="flex space-x-6 mt-4 md:mt-0">
-              <a
-                href="#"
-                className="text-gray-400 hover:text-white transition-colors text-sm"
-              >
-                Privacy
-              </a>
-              <a
-                href="#"
-                className="text-gray-400 hover:text-white transition-colors text-sm"
-              >
-                Terms
-              </a>
-              <a
-                href="#"
-                className="text-gray-400 hover:text-white transition-colors text-sm"
-              >
-                Cookies
-              </a>
-            </div>
           </div>
         </div>
       </footer>

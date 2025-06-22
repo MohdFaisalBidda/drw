@@ -16,7 +16,7 @@ export default async function Home() {
   return (
     <>
       <Header />
-      <JoinRoomPage allRooms={allRooms.data?.rooms} />
+      <JoinRoomPage allRooms={allRooms.data?.rooms || []} />
     </>
   );
 }

@@ -223,29 +223,66 @@ async function leaveRoom(ws: Client) {
 
   if (room && room.members.size > 0) {
     broadcastPresence(ws.currentRoom);
+  } else {
+    const roomId = ws.currentRoom;
+    console.log("Scheduled cleanup for empty room", roomId);
+
+    setTimeout(async () => {
+      try {
+        if (rooms[roomId] && rooms[roomId].members.size === 0) {
+          console.log("cleaning up room", roomId);
+
+          await prisma.shape.deleteMany({
+            where: {
+              roomId: roomId
+            }
+          })
+
+          await prisma.room.delete({
+            where: {
+              id: roomId
+            }
+          })
+
+          console.log("Broadcasting ROOM_DELETED to", wss.clients.size, "clients");
+          wss.clients.forEach(client => {
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(JSON.stringify({
+                type: 'ROOM_DELETED',
+                payload: {
+                  roomId,
+                  deleted: true // Add confirmation flag
+                }
+              }));
+              console.log("ROOM_DELETED sent to client", client);
+            }
+          });
+
+          delete rooms[roomId];
+          console.log("cleaned up room", roomId);
+        } else {
+          console.log("room not empty", roomId);
+        }
+      } catch (error) {
+        console.log(error, "error in cleaning up room");
+      }
+    }, 3000);
   }
 
-  // if (room?.members.size === 0) {
-  //   delete rooms[ws.currentRoom];
-  //   try {
-  //     await prisma.shape.deleteMany({
-  //       where: {
-  //         roomId: ws.currentRoom
-  //       }
-  //     })
-
-  //     await prisma.room.delete({
-  //       where: {
-  //         id: ws.currentRoom
-  //       },
-  //     })
-  //   } catch (error) {
-  //     console.log(error, "error in cleaning up room");
-
-  //   }
-  // }
-
   ws.currentRoom = undefined;
+}
+
+function broadcastRoomDeleted(roomId: string) {
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({
+        type: "ROOM_DELETED",
+        payload: {
+          roomId
+        }
+      }))
+    }
+  })
 }
 
 async function broadcastUserLeft(roomId: string, userId: string) {
@@ -271,27 +308,32 @@ async function deleteShape(ws: Client, shapeId: string, roomId: string) {
   try {
     console.log(shapeId, roomId, ws.userId, "shapeId in deleteShape");
 
+
+    const room = rooms[roomId];
+    if (!room || !room.members.has(ws)) {
+      console.log("User not in room or room doesn't exist");
+      return;
+    }
+
     await prisma.shape.delete({
       where: {
         id: shapeId,
       }
     })
 
-    const room = rooms[roomId];
-    if (room) {
-      room.members.forEach((member) => {
-        if (member.readyState === WebSocket.OPEN && member.userId !== ws.userId) {
-          member.send(JSON.stringify({
-            type: 'DELETE_SHAPE',
-            payload: {
-              shapeId,
-              roomId,
-              userId: ws.userId
-            }
-          }))
-        }
-      })
-    }
+    room.members.forEach((member) => {
+      if (member.readyState === WebSocket.OPEN && member.userId !== ws.userId) {
+        member.send(JSON.stringify({
+          type: 'DELETE_SHAPE',
+          payload: {
+            shapeId,
+            roomId,
+            userId: ws.userId,
+            deletedBy: ws.userId
+          }
+        }))
+      }
+    })
   } catch (error) {
     console.log(error, "error in deleteShape");
 
