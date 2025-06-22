@@ -92,6 +92,15 @@ export class Draw {
         roomId: this.roomId
       }));
 
+      this.socket.send(JSON.stringify({
+        type: 'JOIN_ROOM',
+        payload: {
+          roomId: this.roomId,
+          userId: this.userId,
+          name: this.userId // Or any name you want to use
+        }
+      }));
+
       await this.syncInitialState();
     }
   }
@@ -285,7 +294,7 @@ export class Draw {
     const usersToShow = otherUsers.slice(0, maxVisible);
     const overflowCount = otherUsers.length - maxVisible;
 
-    users.forEach((user, index) => {
+    usersToShow.forEach((user, index) => {
       const hue = parseInt(user.id.replace(/[^\d]/g, '').slice(0, 3)) % 360;
       const userColor = `hsl(${hue}, 80%, 60%)`;
       const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
@@ -532,6 +541,20 @@ export class Draw {
           if (message.type === 'PRESENCE_UPDATE') {
             console.log('Received presence update:', message.payload);
             this.updatePresenceUI(message.payload.users);
+
+            // Update cursors for all users
+            message.payload.users.forEach((user: { id: string }) => {
+              if (user.id !== this.userId) {
+                // Request cursor position from each user
+                this.socket?.send(JSON.stringify({
+                  type: 'REQUEST_CURSOR_POSITION',
+                  payload: {
+                    userId: user.id,
+                    roomId: this.roomId
+                  }
+                }));
+              }
+            });
           }
 
           if (message.type === 'SHAPE_UPDATED') {

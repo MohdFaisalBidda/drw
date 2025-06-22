@@ -5,7 +5,7 @@ import React, { useEffect, useState } from "react";
 import Canvas from "./Canvas";
 import { useRouter } from "next/navigation";
 import { useWebSocket } from "@/hooks/useWebSocket";
-import { ArrowRight, Home, Search, Plus, AlertTriangle } from "lucide-react"; 
+import { ArrowRight, Home, Search, Plus, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { checkRoomExists } from "@/actions";
 
@@ -27,6 +27,7 @@ function RoomCanvas({ roomId }: { roomId: string }) {
         console.log(exists, "exists in verifyRoom");
 
         if (!exists) {
+          setRoomExists(false);
           return;
         }
       } catch (err) {
@@ -53,7 +54,7 @@ function RoomCanvas({ roomId }: { roomId: string }) {
     };
   }, [roomId]);
 
- if (isCheckingRoom) {
+  if (isCheckingRoom) {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
@@ -70,7 +71,9 @@ function RoomCanvas({ roomId }: { roomId: string }) {
               <ArrowRight className="h-10 w-10 text-purple-600 animate-bounce" />
             </div>
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Checking Room...</h2>
+          <h2 className="text-2xl font-bold text-white mb-2">
+            Checking Room...
+          </h2>
           <p className="text-gray-400">Verifying room existence</p>
         </div>
       </div>
