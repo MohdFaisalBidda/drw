@@ -162,7 +162,7 @@ function Canvas({
         {/* Toggle Button */}
         <button
           onClick={togglePanel}
-          className="lg:hidden fixed bottom-20 right-5 lg:bottom-6 bg-darkbg lg:right-[42rem] outline-none border-none p-2 lg:p-4 hover:bg-gray-700 rounded-lg"
+          className="md:hidden fixed bottom-20 right-5 md:bottom-6 bg-darkbg lg:right-[42rem] outline-none border-none p-2 lg:p-4 hover:bg-gray-700 rounded-lg"
         >
           <motion.div transition={{ duration: 0.2 }}>
             {isPanelOpen ? (
@@ -173,7 +173,7 @@ function Canvas({
           </motion.div>
         </button>
         {isPanelOpen && (
-          <div className="mb-2 absolute lg:right-0 lg:top-16 right-4 bottom-32">
+          <div className="mb-2 absolute md:right-4 md:top-16 right-4 bottom-32"> 
             <PropertiesPanel
               onUpdateShape={handleUpdateShape}
               draw={draw}
@@ -184,7 +184,7 @@ function Canvas({
       </div>
 
       {/* Zoom controls */}
-      <div className="absolute bottom-20 left-4 lg:bottom-2 lg:left-2 flex items-center gap-2 bg-darkbg backdrop-blur-sm rounded-lg border border-darkbg p-2 text-white">
+      <div className="absolute bottom-20 left-4 md:bottom-2 md:left-2 flex items-center gap-2 bg-darkbg backdrop-blur-sm rounded-lg border border-darkbg p-2 text-white"> 
         <button
           onClick={() =>
             draw?.zoomOut((newScale: number) => setScale(newScale))

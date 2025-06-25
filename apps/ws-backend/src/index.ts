@@ -55,8 +55,6 @@ wss.on('connection', async (ws: Client, req) => {
   console.log('Client connected');
 
   const url = req.url;
-  console.log(url, "url in ws");
-
   if (!url) {
     console.log('No URL provided');
     ws.close(4001, 'No URL provided');
@@ -78,21 +76,16 @@ wss.on('connection', async (ws: Client, req) => {
   try {
     console.log(url, token, "token in ws");
 
-    console.log(process.env.JWT_SECRET, "process.env.JWT_SECRET in ws");
-
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
     if (typeof decoded == "string") {
       console.error("Decoded token is a string, expected object");
       return null;
     }
-    console.log(decoded, "decoded in ws");
 
     if (!decoded.userId) {
       console.error("No valid user ID in token");
       return null;
     }
-
-    console.log(decoded, "decoded in ws");
     ws.userId = decoded.userId as string;
     ws.name = decoded.name as string;
   } catch (error) {
