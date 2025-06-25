@@ -120,34 +120,31 @@ function App() {
                 </button>
               </Link>
 
-              <button className="flex items-center space-x-2 text-gray-300 hover:text-white transition-colors duration-200">
+              <Link
+                href={"#demo"}
+                className="flex items-center space-x-2 text-gray-300 hover:text-white transition-colors duration-200"
+              >
                 <div className="w-10 h-10 bg-white/10 border border-white/20 rounded-lg flex items-center justify-center">
                   <Play className="w-4 h-4 ml-0.5" />
                 </div>
                 <span>Watch Demo</span>
-              </button>
+              </Link>
             </div>
           </div>
         </div>
       </section>
 
       {/* Demo Preview */}
-      <section className="relative z-10 py-16">
+      <section id="demo" className="relative z-10 py-16">
         <div className="max-w-5xl mx-auto px-6 lg:px-8">
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 lg:p-8">
-            <div className="aspect-video bg-[#1a1a1f] rounded-xl flex items-center justify-center relative overflow-hidden">
-              <div className="text-center space-y-4">
-                <div className="w-16 h-16 bg-purple-600 rounded-xl flex items-center justify-center mx-auto">
-                  <MousePointer className="w-8 h-8 text-white" />
-                </div>
-                <p className="text-gray-400">Interactive demo workspace</p>
-              </div>
-
-              {/* Demo elements */}
-              <div className="absolute top-6 left-6 w-12 h-12 bg-purple-500/20 border border-purple-500/30 rounded-lg"></div>
-              <div className="absolute bottom-6 right-6 w-8 h-8 bg-purple-400/20 border border-purple-400/30 rounded-full"></div>
-              <div className="absolute top-1/2 right-12 w-6 h-6 bg-purple-300/20 border border-purple-300/30 rounded"></div>
-            </div>
+          <div className="aspect-video rounded-xl flex items-center justify-center relative overflow-hidden">
+            <video
+              src="/drw.mp4"
+              autoPlay
+              loop
+              muted
+              className="w-full h-full absolute top-0 left-0"
+            />
           </div>
         </div>
       </section>
