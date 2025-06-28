@@ -54,7 +54,7 @@ export const authOptions: NextAuthOptions = {
                             name: user.name,
                         },
                         process.env.NEXTAUTH_SECRET!,
-                        { expiresIn: '24h' }
+                        { expiresIn: '7d' }
                     );
                     console.log("✅ User authenticated:", user.email, accessToken);
 

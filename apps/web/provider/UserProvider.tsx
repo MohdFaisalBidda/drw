@@ -1,38 +1,59 @@
 "use client";
 
-import { SessionProvider, useSession } from "next-auth/react";
-import { createContext, use, useContext, useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
+import jwt from "jsonwebtoken";
 
 const userContext = createContext<any>(null);
 
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const { data: session, status } = useSession();
-  console.log(session, status, "session in user provider");
-
+  const { data: session, status, update } = useSession();
   const [user, setUser] = useState<any>(null);
 
-  useEffect(() => {
-    if (status === "authenticated" && session?.user) {
+  // Properly memoized token check function with all dependencies
+  const checkToken = useCallback(async () => {
+    if (status !== "authenticated" || !session?.accessToken) return;
+
+    try {
+      const decoded = jwt.decode(session.accessToken) as { exp?: number };
+
+      // If token expires in less than 1 hour or is already expired
+      if (!decoded?.exp || decoded.exp * 1000 < Date.now() + 3600000) {
+        // 1 hour = 3600000 ms
+        console.log("Token about to expire, updating...");
+        await update();
+      }
+    } catch (err) {
+      console.error("Token check failed:", err);
     }
-    console.log(session?.user, "session.user in useEffect");
-    
-    setUser(session?.user); // ✅ only store the user object
-  }, [session, status]);
+  }, [status, session?.accessToken, update]);
+
+  useEffect(() => {
+    // Update user when session changes
+    if (status === "authenticated" && session?.user) {
+      setUser(session.user);
+    }
+  }, [session?.user, status]);
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      // Initial check
+      checkToken();
+    }
+  }, [checkToken, status]);
 
   return (
-    <userContext.Provider value={{ user, setUser }}>
-      {children}
-    </userContext.Provider>
+    <userContext.Provider value={{ user }}>{children}</userContext.Provider>
   );
 };
 
 export const useUser = () => {
   const context = useContext(userContext);
-  if (!context) {
-    return { user: null, setUser: () => {} }; // safe fallback
-  }
-  console.log(context, "context in useUser");
-
-  return context;
+  return context || { user: null }; // Safe default
 };

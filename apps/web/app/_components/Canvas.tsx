@@ -9,9 +9,11 @@ import {
   ChevronUp,
   LogOut,
   Minus,
+  Moon,
   Plus,
   Share2,
   Sparkles,
+  Sun,
 } from "lucide-react";
 import { PropertiesPanel } from "./PropertiesPanel";
 import { motion } from "framer-motion";
@@ -45,6 +47,7 @@ function Canvas({
   } | null>(null);
   const [prompt, setPrompt] = useState("");
   const [isPanelOpen, setIsPanelOpen] = useState(true);
+  const [theme, setTheme] = useState("light");
   const router = useRouter();
 
   // In your Canvas component
@@ -147,7 +150,10 @@ function Canvas({
 
   return (
     <>
-      <canvas ref={canvasRef} className="w-full h-full bg-black" />
+      <canvas
+        ref={canvasRef}
+        className={`w-full h-full ${theme === "light" ? "bg-black" : "bg-white"}`}
+      />
 
       {/* Toolbar at bottom center */}
       <Toolbar
@@ -173,7 +179,7 @@ function Canvas({
           </motion.div>
         </button>
         {isPanelOpen && (
-          <div className="mb-2 absolute md:right-4 md:top-16 right-4 bottom-32"> 
+          <div className="mb-2 absolute md:right-4 md:top-16 right-4 bottom-32">
             <PropertiesPanel
               onUpdateShape={handleUpdateShape}
               draw={draw}
@@ -184,7 +190,7 @@ function Canvas({
       </div>
 
       {/* Zoom controls */}
-      <div className="absolute bottom-20 left-4 md:bottom-2 md:left-2 flex items-center gap-2 bg-darkbg backdrop-blur-sm rounded-lg border border-darkbg p-2 text-white"> 
+      <div className="absolute bottom-20 left-4 md:bottom-2 md:left-2 flex items-center gap-2 bg-darkbg backdrop-blur-sm rounded-lg border border-darkbg p-2 text-white">
         <button
           onClick={() =>
             draw?.zoomOut((newScale: number) => setScale(newScale))
@@ -204,12 +210,23 @@ function Canvas({
         </button>
       </div>
 
-      <Share2 className="absolute top-4 left-4 lg:right-32 w-4 h-4 text-white hover:scale-110 transition-all ease-in-out duration-200 cursor-pointer" />
+      {/* <Share2 className="absolute top-4 left-4 lg:right-32 w-4 h-4 text-white hover:scale-110 transition-all ease-in-out duration-200 cursor-pointer" /> */}
+      {theme === "dark" ? (
+        <Moon
+          onClick={() => setTheme("light")}
+          className={`absolute top-4 left-4 lg:right-32 w-4 h-4 hover:scale-110 transition-all ease-in-out duration-200 cursor-pointer text-black`}
+        />
+      ) : (
+        <Sun
+          onClick={() => setTheme("dark")}
+          className={`absolute top-4 left-4 lg:right-32 w-4 h-4 hover:scale-110 transition-all ease-in-out duration-200 cursor-pointer text-white`}
+        />
+      )}
       {/* Leave button */}
       {session?.user ? (
         <button
           onClick={() => setShowLeaveConfirmation(true)}
-          className="fixed top-2 right-2 px-4 py-2 rounded-lg bg-red-500/50 hover:bg-red-500 text-white text-xs font-medium border border-red-400/30 transition-colors duration-200 flex items-center gap-x-2"
+          className={`fixed top-2 right-2 px-4 py-2 rounded-lg text-white text-xs font-medium border border-red-400/30 transition-colors duration-200 flex items-center gap-x-2 ${theme === "dark" ? "bg-red-500" : "bg-red-500/50 hover:bg-red-500"}`}
         >
           <LogOut className="w-3 h-3 lg:w-4 lg:h-4" />
           Leave

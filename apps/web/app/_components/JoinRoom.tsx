@@ -20,7 +20,7 @@ export default function JoinRoomPage({ allRooms }: { allRooms: Room[] }) {
   useEffect(() => {
     console.log(session, "session in roomCanvas");
     localStorage.setItem("token", session?.accessToken as string);
-  }, [session]);
+  }, [session?.accessToken]);
 
   useEffect(() => {
     localStorage.setItem("token", session?.accessToken as string);
@@ -59,6 +59,9 @@ export default function JoinRoomPage({ allRooms }: { allRooms: Room[] }) {
 
     try {
       setIsLoading(true);
+      if (session?.accessToken) {
+        localStorage.setItem("token", session.accessToken);
+      }
       router.push(`/draw/${roomId}`);
     } catch (err) {
       setError("Failed to join room. Please try again.");

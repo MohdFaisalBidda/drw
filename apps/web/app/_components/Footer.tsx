@@ -33,19 +33,22 @@ function Footer() {
 
           <div className="flex space-x-6">
             <a
-              href="#"
+              href="https://github.com/MohdFaisalBidda/drw"
+              target="_blank"
               className="text-gray-400 hover:text-white transition-colors"
             >
               <Github className="w-5 h-5" />
             </a>
             <a
-              href="#"
+              href="https://x.com/faisalB299"
+              target="_blank"
               className="text-gray-400 hover:text-white transition-colors"
             >
               <Twitter className="w-5 h-5" />
             </a>
             <a
-              href="#"
+              href="mailto:biddafaisal@gmail.com"
+              target="_blank"
               className="text-gray-400 hover:text-white transition-colors"
             >
               <Mail className="w-5 h-5" />
