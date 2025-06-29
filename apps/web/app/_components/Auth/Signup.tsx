@@ -141,7 +141,7 @@ function Signup() {
               Create your account
             </h1>
             <p className="text-gray-400">
-              Join SketchBoard and start collaborating
+              Join Drw and start collaborating
             </p>
           </div>
 

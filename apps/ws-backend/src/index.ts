@@ -160,14 +160,12 @@ async function joinRoom(ws: Client, roomId: string) {
   ws.currentRoom = roomId;
   broadcastPresence(roomId)
 
-  console.log(ws.currentRoom, roomId, "join room here");
+  console.log("Current room", ws.currentRoom, roomId);
 }
 
 async function broadcastPresence(roomId: string) {
   const room = rooms[roomId];
   if (!room) return;
-
-  console.log(room.members, "room.members in broadcastPresence");
 
   const presenceData = {
     type: 'PRESENCE_UPDATE',
@@ -376,7 +374,7 @@ async function handleCreateShape(ws: Client, message: string, roomId: string) {
     console.log(ws.currentRoom, "ws.currentRoom");
     if (!rooms[roomId] || !ws.currentRoom) return;
 
-    console.log(message, ws, roomId, "message in broadcastMessage");
+    console.log(message,roomId, "message in broadcastMessage");
 
     const shapeData = JSON.parse(message);
 

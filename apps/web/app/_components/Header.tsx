@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { Menu, PenTool, UserIcon, X } from "lucide-react";
 import { appName } from "@/utils";
@@ -12,6 +12,7 @@ export default function Header() {
   const router = useRouter();
   const { data: session } = useSession();
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const pathname = usePathname();
   const [scrollY, setScrollY] = React.useState(0);
 
   React.useEffect(() => {
@@ -48,12 +49,20 @@ export default function Header() {
           </Link>
 
           <nav className="hidden md:flex items-center space-x-8">
-            <a
-              href="#features"
+            {pathname === "/" && (
+              <a
+                href="#features"
+                className="text-gray-400 hover:text-white transition-colors duration-200"
+              >
+                Features
+              </a>
+            )}
+            <Link
+              href={"/drw"}
               className="text-gray-400 hover:text-white transition-colors duration-200"
             >
-              Features
-            </a>
+              Playground
+            </Link>
 
             {user ? (
               <div className="flex items-center space-x-4">

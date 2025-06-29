@@ -21,16 +21,23 @@ import {
   Github,
   Mail,
   Twitter,
+  MonitorSmartphone,
+  Moon,
+  Settings,
+  Database,
 } from "lucide-react";
 import Link from "next/link";
 import { appName } from "@/utils";
 import Header from "./_components/Header";
 import Image from "next/image";
 import Footer from "./_components/Footer";
+import { useUser } from "@/provider/UserProvider";
+import { useRouter } from "next/navigation";
 
 function App() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrollY, setScrollY] = useState(0);
+  const { user } = useUser();
+  const router = useRouter();
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -40,42 +47,91 @@ function App() {
 
   const features = [
     {
-      icon: PenTool,
-      title: "Natural Drawing",
+      icon: Users,
+      title: "Real-time Team Collaboration",
       description:
-        "Create fluid, hand-drawn strokes that feel authentic and organic for natural diagram creation",
+        "Invite team members to rooms and brainstorm visually with live cursors, presence indicators, and instant updates.",
     },
     {
-      icon: Users,
-      title: "Real-time Collaboration",
+      icon: PenTool,
+      title: "Intuitive Drawing Tools",
       description:
-        "Work together seamlessly with live cursors and instant updates across all team members",
+        "Use free-hand drawing, geometric shapes, text, and arrows to bring your ideas to life on an infinite canvas.",
     },
     {
       icon: Zap,
-      title: "Instant Sync",
+      title: "Instant Sync Across Devices",
       description:
-        "Zero-latency synchronization ensures everyone stays in sync across all devices",
+        "No refreshes. Every change you make is synchronized in milliseconds across all participants' screens.",
     },
     // {
-    //   icon: Layers,
-    //   title: "Smart Organization",
+    //   icon: Shapes,
+    //   title: "Smart Shapes and Connectors",
     //   description:
-    //     "Organize complex diagrams with intelligent layering and grouping capabilities",
-    // },
-    // {
-    //   icon: Globe,
-    //   title: "Cloud Native",
-    //   description:
-    //     "Access your work from anywhere with reliable cloud-based architecture",
+    //     "Design clean diagrams with built-in snapping, alignment, and connector tools for effortless wireframing or flowcharts.",
     // },
     // {
     //   icon: Lock,
-    //   title: "Enterprise Security",
+    //   title: "Secure Access & Roles",
     //   description:
-    //     "Bank-grade encryption and security measures keep your ideas protected",
+    //     "Manage access with login, anonymous guest mode, and role-based permissions inside team rooms.",
     // },
+    {
+      icon: MonitorSmartphone,
+      title: "Cross-Platform Support",
+      description:
+        "Works beautifully on desktop, tablet, and mobile with responsive layout and optimized performance.",
+    },
+    // {
+    //   icon: LayoutDashboard,
+    //   title: "Team Dashboards",
+    //   description:
+    //     "Organize drawings by workspace, manage team members, and keep track of active projects in one place.",
+    // },
+    // {
+    //   icon: ClipboardList,
+    //   title: "Templates & Presets",
+    //   description:
+    //     "Start faster with reusable templates for brainstorming, mind maps, wireframes, and more. (Upcoming)",
+    // },
+    // {
+    //   icon: Share2,
+    //   title: "Easy Sharing",
+    //   description:
+    //     "Share editable or view-only links to your boards with collaborators, clients, or external teams.",
+    // },
+    {
+      icon: Download,
+      title: "Export to Image",
+      description:
+        "Download your canvas as high-resolution PNG files to use in docs, slides, or reports.",
+    },
+    {
+      icon: Moon,
+      title: "Light & Dark Themes",
+      description:
+        "Switch between light and dark modes for optimal comfort during day or night work.",
+    },
+    {
+      icon: Settings,
+      title: "Custom Properties Panel",
+      description:
+        "Control stroke, fill, text size, colors, and object layering through a flexible properties panel.",
+    },
+    {
+      icon: Database,
+      title: "Playground Mode",
+      description:
+        "Test out new features or troubleshoot issues without creating a room. No data is saved.",
+    },
   ];
+  const handleTryNow = () => {
+    if (user) {
+      router.push("/join");
+    } else {
+      router.push("/sign-in");
+    }
+  };
 
   return (
     <div
@@ -113,12 +169,13 @@ function App() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-6">
-              <Link href="/drw">
-                <button className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors duration-200 flex items-center space-x-2">
-                  <span>Try now</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </Link>
+              <button
+                onClick={handleTryNow}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors duration-200 flex items-center space-x-2"
+              >
+                <span>Try now</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
 
               <Link
                 href={"#demo"}
@@ -162,11 +219,11 @@ function App() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="flex flex-wrap justify-center gap-6">
             {features.map((feature, index) => (
               <div
                 key={index}
-                className="bg-white/5 border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-colors duration-200"
+                className="bg-white/5 border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-colors duration-200 w-full md:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] max-w-md"
               >
                 <div className="w-12 h-12 bg-purple-600/20 rounded-lg flex items-center justify-center mb-4">
                   <feature.icon className="w-6 h-6 text-purple-400" />
@@ -194,12 +251,13 @@ function App() {
             </h2>
 
             <p className="text-lg text-gray-400 mb-8 max-w-2xl mx-auto">
-              Join thousands of teams creating amazing diagrams with
-              SketchBoard. Start your free trial today.
+              Join creating amazing creative projects with Drw!
+              <br />
+              Start your creativity today!
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors duration-200">
+              <button onClick={()=>router.push("/drw")} className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors duration-200">
                 Try without login
               </button>
 

@@ -107,7 +107,7 @@ function SigninPage() {
               <LogIn className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">Welcome back</h1>
-            <p className="text-gray-400">Sign in to your SketchBoard account</p>
+            <p className="text-gray-400">Sign in to your Drw account</p>
           </div>
 
           {/* Form */}

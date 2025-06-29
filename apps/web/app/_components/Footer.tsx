@@ -58,7 +58,7 @@ function Footer() {
 
         <div className="mt-8 pt-6 border-t border-white/10 text-center">
           <p className="text-gray-400 text-sm">
-            &copy; 2025 SketchBoard. All rights reserved.
+            &copy; 2025 Drw. All rights reserved.
           </p>
         </div>
       </div>

@@ -7,6 +7,7 @@ import {
   Camera,
   ChevronDown,
   ChevronUp,
+  Download,
   LogOut,
   Minus,
   Moon,
@@ -179,7 +180,7 @@ function Canvas({
           </motion.div>
         </button>
         {isPanelOpen && (
-          <div className="mb-2 absolute md:right-4 md:top-16 right-4 bottom-32">
+          <div className="mb-2 absolute md:right-2 md:top-16 right-4 bottom-32">
             <PropertiesPanel
               onUpdateShape={handleUpdateShape}
               draw={draw}
@@ -210,7 +211,10 @@ function Canvas({
         </button>
       </div>
 
-      {/* <Share2 className="absolute top-4 left-4 lg:right-32 w-4 h-4 text-white hover:scale-110 transition-all ease-in-out duration-200 cursor-pointer" /> */}
+      <Download
+        onClick={handleScreenshot}
+        className="absolute top-4 left-12 lg:right-80 w-4 h-4 text-white hover:scale-110 transition-all ease-in-out duration-200 cursor-pointer"
+      />
       {theme === "dark" ? (
         <Moon
           onClick={() => setTheme("light")}

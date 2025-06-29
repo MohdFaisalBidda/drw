@@ -542,19 +542,19 @@ export class Draw {
             console.log('Received presence update:', message.payload);
             this.updatePresenceUI(message.payload.users);
 
-            // Update cursors for all users
-            message.payload.users.forEach((user: { id: string }) => {
-              if (user.id !== this.userId) {
-                // Request cursor position from each user
-                this.socket?.send(JSON.stringify({
-                  type: 'REQUEST_CURSOR_POSITION',
-                  payload: {
-                    userId: user.id,
-                    roomId: this.roomId
-                  }
-                }));
-              }
-            });
+            // // Update cursors for all users
+            // message.payload.users.forEach((user: { id: string }) => {
+            //   if (user.id !== this.userId) {
+            //     // Request cursor position from each user
+            //     this.socket?.send(JSON.stringify({
+            //       type: 'REQUEST_CURSOR_POSITION',
+            //       payload: {
+            //         userId: user.id,
+            //         roomId: this.roomId
+            //       }
+            //     }));
+            //   }
+            // });
           }
 
           if (message.type === 'SHAPE_UPDATED') {
