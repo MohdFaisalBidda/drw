@@ -149,7 +149,7 @@ function App() {
       <section className="relative z-10 pt-24 pb-16 lg:pt-32 lg:pb-24">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="text-center space-y-8 max-w-4xl mx-auto">
-            <div className="inline-flex items-center space-x-2 bg-white/5 border border-white/10 rounded-full px-4 py-2 text-sm">
+            <div className="inline-flex items-center space-x-2 bg-white/5 hover:bg-white/10 transition-colors duration-200 border border-white/10 rounded-full px-4 py-2 text-sm">
               <Sparkles className="w-4 h-4 text-purple-400" />
               <span className="text-gray-300">
                 Now with Real Time Collaboration
