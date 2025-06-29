@@ -6,7 +6,6 @@
 
 ### Draw, sketch, and brainstorm together in real-time ✨
 
-[![Demo Video](https://img.shields.io/badge/🎥-Watch%20Demo-purple?style=for-the-badge)](./apps/web/public/drw.mp4)
 [![Built with Next.js](https://img.shields.io/badge/Built%20with-Next.js-black?style=flat-square&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![WebSocket](https://img.shields.io/badge/WebSocket-Real--time-green?style=flat-square)](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API)
@@ -17,9 +16,10 @@
 
 ---
 
-## 🚀 Live Demo
+## 🚀 Live Demo - See in action! 
 
-🎬 **[Watch Demo Video](./apps/web/public/drw.mp4)** - See Drw in action!
+![Drw Logo](./apps/web/public/drw-demo.gif) 
+![Drw Logo](./apps/web/public/drw-collaboration-demo.gif) 
 
 ## 📖 Overview
 
@@ -64,7 +64,6 @@ Drw is a modern, full-featured collaborative whiteboard application that enables
 - **[Tailwind CSS](https://tailwindcss.com/)** - Utility-first CSS framework
 - **[Framer Motion](https://www.framer.com/motion/)** - Smooth animations
 - **[Radix UI](https://www.radix-ui.com/)** - Accessible UI components
-- **[Zustand](https://zustand-demo.pmnd.rs/)** - State management
 - **[NextAuth.js](https://next-auth.js.org/)** - Authentication
 
 ### Backend
@@ -113,8 +112,8 @@ exceli-draw/
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/exceli-draw.git
-cd exceli-draw
+git clone https://github.com/yourusername/drw.git
+cd drw
 ```
 
 2. **Install dependencies**
@@ -133,7 +132,6 @@ cp .env.example .env
 # - DATABASE_URL (PostgreSQL connection string)
 # - NEXTAUTH_SECRET (for NextAuth.js)
 # - JWT_SECRET (for WebSocket authentication)
-# - GEMINI_API_KEY (for AI features)
 ```
 
 4. **Set up the database**
@@ -159,8 +157,8 @@ npm run start:websocket  # WebSocket server (port 8080)
 
 1. **Clone and configure**
 ```bash
-git clone https://github.com/yourusername/exceli-draw.git
-cd exceli-draw
+git clone https://github.com/yourusername/drw.git
+cd drw
 cp .env.example .env
 ```
 
@@ -238,8 +236,6 @@ NEXTAUTH_URL="http://localhost:3000"
 # WebSocket Authentication
 JWT_SECRET="your-jwt-secret"
 
-# AI Features (Optional)
-GEMINI_API_KEY="your-gemini-api-key"
 ```
 
 ### Database Schema
@@ -340,7 +336,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- **Excalidraw** - Inspiration for the drawing experience
+- **tldraw** - Inspiration for the drawing experience
 - **Figma** - UI/UX inspiration
 - **Vercel** - Deployment platform
 - **Open Source Community** - Amazing tools and libraries
